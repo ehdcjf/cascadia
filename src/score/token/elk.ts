@@ -1,6 +1,6 @@
 import { allPlacedTokens } from "../tile";
 
-const ElkScoringValue = {
+const ElkScoringValue: Record<number, number> = {
         0: 0,
         1: 2,
         3: 9,
@@ -8,10 +8,11 @@ const ElkScoringValue = {
 };
 
 export class ElkScoring {
+        private score = 0;
         private allElkTokens: string[] = [];
-        private usedElkTokenIDs = [];
-        private potentialElkLines = [];
-        private confirmedElkLines = [];
+        private usedElkTokenIDs: string[] = [];
+        private potentialElkLines: string[] = [];
+        private confirmedElkLines: any[][] = [];
         private potentialElkLineStartingTokens = {
                 E: [],
                 SE: [],
@@ -28,9 +29,21 @@ export class ElkScoring {
 
                 if (this.allElkTokens.length != 0) {
                         if (this.allElkTokens.length == 1) {
+                                this.usedElkTokenIDs.push(this.allElkTokens[0]);
+                                this.confirmedElkLines.push(this.allElkTokens);
                         } else {
+                                this.generateAllElkLines();
                         }
                 }
+
+                if (this.confirmedElkLines.length > 0) {
+                        this.confirmedElkLines.sort((a, b) => b.length - a.length);
+                        for (let i = 0; i < this.confirmedElkLines.length; i++) {
+                                const elkInLineNum = this.confirmedElkLines[i].length;
+                                this.score += ElkScoringValue[elkInLineNum];
+                        }
+                }
+                return this.score;
         }
 
         generateAllElkLines() {}
