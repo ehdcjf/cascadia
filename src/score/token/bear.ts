@@ -1,3 +1,4 @@
+import { Scoring } from "../../interfaces";
 import { allPlacedTokens } from "../tile";
 import { neighbourTileIDs } from "./util";
 
@@ -8,6 +9,22 @@ const BearScoringValue: Record<number, number> = {
         3: 19,
         4: 27,
 };
+
+export class BearScoring extends Scoring {
+        constructor() {
+                super("bear");
+        }
+
+        protected calculate() {
+                let confirmedBearPairs = 0;
+                const potentialTokenIDs: string[] = [];
+                const usedTokenIDs: string[] = [];
+
+                const bearTokenIDs = this.getTargetTokenIDs();
+
+                return 0;
+        }
+}
 
 export function calculateBearScoring() {
         let confirmedBearPairs = 0;

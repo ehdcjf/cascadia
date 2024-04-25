@@ -1,3 +1,5 @@
+import { allPlacedTokens } from "./score/tile";
+
 export type Tile = {
         tileNum: string;
         habitats: string[];
@@ -6,3 +8,20 @@ export type Tile = {
 };
 
 export type WildLife = "bear" | "elk" | "hawk" | "salmon" | "fox";
+
+export abstract class Scoring {
+        protected allPlacedTokens: Record<string, string | false> = allPlacedTokens;
+
+        constructor(protected wildLife: WildLife) {}
+
+        get score() {
+                return this.calculate();
+        }
+
+        protected getTargetTokenIDs() {
+                return Object.entries(this.allPlacedTokens)
+                        .filter(([_, value]) => value == this.wildLife)
+                        .map((v) => v[0]);
+        }
+        protected abstract calculate(): number;
+}

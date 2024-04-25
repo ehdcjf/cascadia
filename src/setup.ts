@@ -2,7 +2,7 @@ import { Tile, WildLife } from "./interfaces";
 import { startingTiles, tiles } from "./data";
 import { processPlacedTileAndTokens } from "./score/tile";
 export const allTiles: Tile[] = [];
-export const allTokens: string[] = [];
+export const allTokens: WildLife[] = [];
 
 const mapLimits = {
         up: 10,
@@ -18,7 +18,7 @@ const tokenNums: Record<WildLife, number> = {
         fox: 20,
 };
 
-const mapRowsColumnsIndexes = {
+const mapRowsColumnsIndexes: { rows: Record<number, number>; columns: Record<number, number> } = {
         rows: {},
         columns: {},
 };
@@ -29,7 +29,7 @@ export const mapData: {
         placedTile: boolean;
         habitats: string[];
         wildlife: string[];
-        placedToken: string | false;
+        placedToken: WildLife | false;
         rotation: number;
 }[][] = [];
 
@@ -39,8 +39,8 @@ export const mapData: {
  * @param amount
  */
 function setupTiles(amount: number) {
-        const suffled = this.suffle(tiles);
-        allTiles.push(suffled);
+        const suffled = suffle(tiles);
+        allTiles.push(...suffled);
 }
 
 /**
@@ -49,12 +49,12 @@ function setupTiles(amount: number) {
 function setupTokens() {
         const tokens: WildLife[] = [];
         for (const tokenName in tokenNums) {
-                for (let i = 0; i < tokenNums[tokenName]; i++) {
+                for (let i = 0; i < tokenNums[tokenName as WildLife]; i++) {
                         tokens.push(tokenName as WildLife);
                 }
         }
-        const suffled = this.suffle(tokens);
-        allTokens.push(suffled);
+        const suffled = suffle(tokens);
+        allTokens.push(...suffled);
 }
 
 //fisherYates

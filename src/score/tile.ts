@@ -1,3 +1,4 @@
+import { WildLife } from "../interfaces";
 import { mapData } from "../setup";
 import { linkedTileSides } from "./const";
 
@@ -11,7 +12,8 @@ export const allPlacedTiles: Record<
                 habitatsSides: string[];
         }
 > = {};
-export const allPlacedTokens: Record<string, string | false> = {};
+
+export const allPlacedTokens: Record<string, WildLife> = {};
 const habitatsMaches: Record<
         string,
         { placedTiles: number; tilesWithMachedHabitats: any[]; finalSets: any[]; largestSet: number }
@@ -108,7 +110,7 @@ export function processPlacedTileAndTokens() {
                                 habitatsSides: habitatsSides,
                         };
 
-                        if (mapData[i][j].placedToken) allPlacedTokens[key] = mapData[i][j].placedToken;
+                        if (mapData[i][j].placedToken) allPlacedTokens[key] = mapData[i][j].placedToken as WildLife;
                         tileNum++;
                 }
         }
