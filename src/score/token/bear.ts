@@ -1,7 +1,7 @@
 import { allPlacedTokens } from "../tile";
 import { neighbourTileIDs } from "./util";
 
-const BearScoringValue = {
+const BearScoringValue: Record<number, number> = {
         0: 0,
         1: 4,
         2: 11,
