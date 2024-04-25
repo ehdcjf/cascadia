@@ -1,4 +1,5 @@
 import { allPlacedTokens } from "../tile";
+import { searchNeighbourTilesForWildlife } from "./util";
 
 const ElkScoringValue: Record<number, number> = {
         0: 0,
@@ -46,5 +47,18 @@ export class ElkScoring {
                 return this.score;
         }
 
-        generateAllElkLines() {}
+        generateAllElkLines() {
+                const sharedElkTokenIDs = {};
+                const allLineDetails = {};
+                for (let i = this.allElkTokens.length - 1; i >= 0; i--) {
+                        const neighbouringElk = searchNeighbourTilesForWildlife(this.allElkTokens[i], "elk");
+                        if (neighbouringElk.length == 0) {
+                                this.confirmedElkLines.push([this.allElkTokens[i]]);
+                                this.usedElkTokenIDs.push(this.allElkTokens[i]);
+                                this.allElkTokens.splice(i, 1);
+                        }
+                }
+
+                for (let i = 0; i < this.allElkTokens.length; i++) {}
+        }
 }
