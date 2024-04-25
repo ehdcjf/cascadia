@@ -67,3 +67,5 @@ export class Board {
                 });
         }
 }
+
+const x = new Board();

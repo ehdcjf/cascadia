@@ -1,6 +1,6 @@
-import { Tile, WildLife } from "./interfaces";
+import { Habitat, Tile, WildLife } from "./interfaces";
 
-export const startingTiles: { tileNum: string; habitats: string[]; wildlife: WildLife[]; rotation: number }[][] = [
+export const startingTiles: { tileNum: string; habitats: Habitat[]; wildlife: WildLife[]; rotation: number }[][] = [
         [
                 {
                         tileNum: "1",
