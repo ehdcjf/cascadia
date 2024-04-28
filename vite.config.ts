@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-        // easier readability in the sandbox
-        clearScreen: false,
+  // easier readability in the sandbox
+  clearScreen: false,
+  publicDir: "public",
 });
