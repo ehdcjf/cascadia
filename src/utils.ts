@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-
-export function allPossibleCases(arr:any[]){
-
-}
+export function allPossibleCases(arr: any[]) {}
 
 export function indexOfMax(arr: number[]) {
   if (arr.length == 0) return -1;
@@ -16,12 +12,10 @@ export function indexOfMax(arr: number[]) {
   }
   return maxIndex;
 }
-=======
 export function idToRowColumn(id: string) {
-        return id.split("-").map(Number);
+  return id.split("-").map(Number);
 }
 
 export function getRowColMapIndex(row: number) {
-        return row % 2 == 0 ? 0 : 1;
+  return row % 2 == 0 ? 0 : 1;
 }
->>>>>>> v2
