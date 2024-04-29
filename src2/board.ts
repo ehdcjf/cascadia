@@ -1,5 +1,5 @@
 import { mapLimits } from "./const";
-import { startingTiles } from "./data";
+import { startingTiles } from "../src3/data";
 import type { MapDataItem, WildLife } from "./interfaces";
 
 export class Board {

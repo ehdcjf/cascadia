@@ -85,11 +85,7 @@ class App {
       new Vector3(0, 1, 0),
       this.scene
     );
-    const light2 = new HemisphericLight(
-      "light",
-      new Vector3(0, 1, 0),
-      this.scene2
-    );
+    const light2 = new HemisphericLight("light2", new Vector3(0, 1, 0), this.scene2);
 
     Inspector.Show(this.scene, {});
 
