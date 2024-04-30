@@ -100,8 +100,7 @@ class App {
         private async loadAssetAsync() {
                 const assets = await SceneLoader.ImportMeshAsync("", "./models/", "cascadia.glb", this.scene);
                 assets.meshes.forEach((mesh, i) => {
-                        mesh.id = mesh.id.replace("mountian", "mountain");
-                        mesh.id = mesh.id.replace("begie", "beige");
+                        console.log(mesh.id);
                         mesh.visibility = 0;
                 });
         }

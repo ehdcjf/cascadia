@@ -1,6 +1,8 @@
 import { AbstractMesh, Color3, NodeGeometry, Scene, Tools, TransformNode, Vector3 } from "@babylonjs/core";
 import { startingTiles } from "./data";
 import { Habitat, TileInfo, WildLife } from "./interfaces";
+import { TileScoring } from "./score/tile";
+import { BearScoring } from "./score/token/bear";
 const rotationIndexes = {
         positive: [0, 60, 120, 180, 240, 300],
         negative: [0, -300, -240, -180, -120, -60],
@@ -9,17 +11,15 @@ export type MapItem = {
         tileId: number;
         coor: Coordinates;
         placedTile: AbstractMesh;
-        habitats: Habitat[];
+        habitats: Set<Habitat>;
         wildlife: WildLife[];
-        placedToken: false | AbstractMesh;
+        placedToken: false | WildLife;
         rotation: number;
-        rotationIndex: number;
-        habitatsArray: Habitat[];
-        visited: Set<any>;
+        habitatSides: Habitat[];
 };
 const H = 1.5;
 const W = Math.cos(Math.PI / 6);
-class Coordinates {
+export class Coordinates {
         private column: number;
         private row: number;
         private _vector: Vector3;
@@ -34,11 +34,11 @@ class Coordinates {
         }
 
         get key() {
-                return this.cr.join("#");
+                return [this.q, this.r, this.s].join("#");
         }
 
         get qrs() {
-                return [this.q, this.r, this.s];
+                return { q: this.q, r: this.r, s: this.s };
         }
 
         get cr() {
@@ -49,33 +49,7 @@ class Coordinates {
                 return this._vector;
         }
 
-        get neighborCR() {
-                const directionDifferences = [
-                        // even rows
-                        [
-                                [+1, 0],
-                                [0, -1],
-                                [-1, -1],
-                                [-1, 0],
-                                [-1, +1],
-                                [0, +1],
-                        ],
-                        // odd rows
-                        [
-                                [+1, 0],
-                                [+1, -1],
-                                [0, -1],
-                                [-1, 0],
-                                [0, +1],
-                                [+1, +1],
-                        ],
-                ];
-
-                const parity = this.row & 1;
-                return directionDifferences[parity].map((diff) => [this.column + diff[0], this.row + diff[1]]);
-        }
-
-        get nighborCoor() {
+        get neighborCoor() {
                 const diffs = [
                         [1, -1, 0], // NE
                         [1, 0, -1], // E
@@ -89,6 +63,10 @@ class Coordinates {
                         return new Coordinates(this.q + diff[0], this.r + diff[1], this.s + diff[2]);
                 });
         }
+
+        get neighborKeys() {
+                return this.neighborCoor.map((v) => v.key);
+        }
 }
 
 export class Board {
@@ -99,9 +77,13 @@ export class Board {
         constructor(protected scene: Scene) {
                 this.tfNode = new TransformNode("pocket-tf", this.scene);
                 this.loadStartingTile();
+
+                new TileScoring(this.mapData);
+                const bear = new BearScoring(this.mapData);
         }
 
-        protected addTile(tileInfo: TileInfo, coor: Coordinates) {
+        protected addTile(tileInfo: TileInfo, qrs: { q: number; r: number; s: number }) {
+                const coor = new Coordinates(qrs.q, qrs.r, qrs.s);
                 const habitatName = tileInfo.habitats.join("-");
 
                 const tileMesh = this.scene.getMeshById(habitatName)!.clone(`tile${coor.key}`, this.tfNode)!;
@@ -128,16 +110,17 @@ export class Board {
                 tfNode.rotation = new Vector3(0, -Tools.ToRadians(tileInfo.rotation), 0);
                 const sign = Math.sign(tileInfo.rotation) != -1 ? "positive" : "negative";
                 const rotationIndex = rotationIndexes[sign].indexOf(tileInfo.rotation);
-                const habitatsArray = new Array(6);
+                const habitatSides = new Array(6);
+
                 if (tileInfo.habitats.length == 1) {
-                        habitatsArray.fill(tileInfo.habitats[0]);
+                        habitatSides.fill(tileInfo.habitats[0]);
                 } else {
                         const [h1, h2] = tileInfo.habitats;
                         let currentHabitat = h1;
                         let habitatIndex = rotationIndex;
 
                         for (let i = 0; i < 6; i++) {
-                                habitatsArray[habitatIndex] = currentHabitat;
+                                habitatSides[habitatIndex] = currentHabitat;
                                 habitatIndex++;
                                 if (habitatIndex == 6) habitatIndex = 0;
                                 if (i == 2) currentHabitat = h2;
@@ -157,17 +140,15 @@ export class Board {
                         wildlife[2].position.z += 0.1;
                 }
 
-                const mapItem = {
+                const mapItem: MapItem = {
                         tileId: this.mapData.size + 1,
                         coor: coor,
                         placedToken: false as false,
                         placedTile: tileMesh,
-                        habitats: tileInfo.habitats,
+                        habitats: new Set(tileInfo.habitats),
                         wildlife: tileInfo.wildlife,
                         rotation: tileInfo.rotation,
-                        rotationIndex: rotationIndex,
-                        habitatsArray: habitatsArray,
-                        visited: new Set(),
+                        habitatSides: habitatSides,
                 };
                 this.mapData.set(coor.key, mapItem);
         }
@@ -181,17 +162,17 @@ export class Board {
                         [0, 1, -1],
                         [-1, 1, 0],
                 ].forEach(([q, r, s], i) => {
-                        const coor = new Coordinates(q, r, s);
                         const thisStartingTile = startingTile[i];
-                        this.addTile(thisStartingTile, coor);
+                        this.addTile(thisStartingTile, { q, r, s });
                 });
 
                 const emptyTileOrigin = this.scene.getMeshById("beige");
                 this.mapData.forEach((mepItem, k) => {
-                        mepItem.coor.nighborCoor.forEach((v) => {
+                        mepItem.coor.neighborCoor.forEach((v) => {
                                 if (!this.mapData.has(v.key) && !this.possiblePath.has(v.key)) {
                                         const emptyTile = emptyTileOrigin?.clone(`beige${v.key}`, null)!;
                                         emptyTile.visibility = 1;
+                                        emptyTile.metadata = { type: "possible", qrs: v.qrs };
                                         emptyTile.position = v.vector;
                                         this.possiblePath.set(v.key, emptyTile);
                                 }
