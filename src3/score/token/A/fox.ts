@@ -1,5 +1,5 @@
-import { MapItem } from '../../board';
-import { WildLife } from '../../interfaces';
+import { MapItem } from '../../../board';
+import { WildLife } from '../../../interfaces';
 const FoxScoringValue: Record<number, number> = {
 	0: 0,
 	1: 1,

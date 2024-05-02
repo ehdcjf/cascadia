@@ -1,5 +1,5 @@
-import { MapItem } from '../../board';
-import { Queue } from '../../utils';
+import { MapItem } from '../../../board';
+import { Queue } from '../../../utils';
 const ElkScoringValue: Record<number, number> = {
 	0: 0,
 	1: 2,

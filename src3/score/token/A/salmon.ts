@@ -1,5 +1,5 @@
-import { MapItem } from '../../board';
-import { Queue } from '../../utils';
+import { MapItem } from '../../../board';
+import { Queue } from '../../../utils';
 const SalmonScoringValue: Record<number, number> = {
 	1: 2,
 	2: 4,
