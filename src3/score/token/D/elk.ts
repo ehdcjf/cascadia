@@ -1,31 +1,15 @@
 import { Coordinates } from '../../../board';
 import { MapItem } from '../../../board';
 import { Queue } from '../../../utils';
-const ElkScoringValueB: Record<number, number> = {
+const ElkScoringValueD: Record<number, number> = {
 	0: 0,
 	1: 2,
 	2: 5,
-	3: 9,
-	4: 13,
+	3: 8,
+	4: 12,
+	5: 16,
+	6: 21,
 };
-
-const ParallelogramQRS = [
-	[
-		[1, -1, 0],
-		[1, 0, -1],
-		[2, -1, -1],
-	],
-	[
-		[1, 0, -1],
-		[0, 1, -1],
-		[1, 1, -2],
-	],
-	[
-		[0, 1, -1],
-		[-1, 1, 0],
-		[-1, 2, -1],
-	],
-];
 
 export class ElkScoring {
 	private totalScore = 0;
@@ -85,20 +69,21 @@ export class ElkScoring {
 		const groups: string[][] = [];
 		switch (elkGroup.length) {
 			case 0:
-				score = ElkScoringValueB[0];
+				score = ElkScoringValueD[0];
 				break;
 			case 1:
-				score = ElkScoringValueB[1];
+				score = ElkScoringValueD[1];
 				groups.push(elkGroup);
 				break;
+
 			case 2:
 				const [first, second] = elkGroup.map((key) => this.mapData.get(key)!.coor);
 				const distance = this.calcDistanceByQRS(first, second);
 				if (distance == 1) {
-					score = ElkScoringValueB[2];
+					score = ElkScoringValueD[2];
 					groups.push(elkGroup);
 				} else {
-					score = ElkScoringValueB[1] * 2;
+					score = ElkScoringValueD[1] * 2;
 					groups.push([elkGroup[0]]);
 					groups.push([elkGroup[1]]);
 				}
@@ -122,61 +107,51 @@ export class ElkScoring {
 		return { score, groups };
 	}
 
-	// 아무튼 3마리 이상의 그룹으로 이루어진 경우
 	private calculateElkGroupOverTwo(elkGroup: string[]): { score: number; groups: string[][] } {
 		let maxScore = 0;
 		let group: string[][] = [];
-		elkGroup.forEach((elkKey) => {
-			const [q, r, s] = elkKey.split('#').map(Number);
+		const q = new Queue();
 
-			ParallelogramQRS.forEach((parallelogram) => {
-				const targetKeys = parallelogram.map((p) => [q + p[0], r + p[1], s + p[2]].join('#'));
-				const isParallelogram = targetKeys.every((key) => elkGroup.includes(key));
-				if (isParallelogram && elkGroup.length > 3) {
-					const restElks = elkGroup.filter((v) => v != elkKey || !targetKeys.includes(v));
-					const result = this.calculateElkGroup(restElks);
-					const score = ElkScoringValueB[4] + result.score;
-					if (score > maxScore) {
-						maxScore = score;
-						group = [[elkKey, ...targetKeys], ...result.groups];
-					}
-				} else {
-					targetKeys.pop(); // 마지막 키를 제거하면 삼각형
-					const isTriangle = targetKeys.every((key) => elkGroup.includes(key));
-					if (isTriangle) {
-						const restElks = elkGroup.filter(
-							(v) => v != elkKey || !targetKeys.includes(v)
-						);
-						const result = this.calculateElkGroup(restElks);
-						const score = ElkScoringValueB[3] + result.score;
-						if (score > maxScore) {
-							maxScore = score;
-							group = [[elkKey, ...targetKeys], ...result.groups];
-						}
-					} else {
-						targetKeys.pop(); // 마지막 키를 제거하면 직선
-						const isLine = targetKeys.every((key) => elkGroup.includes(key));
-						if (isLine) {
-							const restElks = elkGroup.filter(
-								(v) => v != elkKey || !targetKeys.includes(v)
-							);
-							const result = this.calculateElkGroup(restElks);
-							const score = ElkScoringValueB[2] + result.score;
-							if (score > maxScore) {
-								maxScore = score;
-								group = [[elkKey, ...targetKeys], ...result.groups];
-							}
-						}
-					}
+		elkGroup.forEach((elkKey) => {
+			const neighborKeys = this.mapData.get(elkKey)!.coor.neighborKeys;
+
+			neighborKeys.forEach((neighborKey, lastDir) => {
+				if (elkGroup.includes(neighborKey)) {
+					const nowElks = [elkKey, neighborKey];
+					q.push([nowElks, lastDir]);
 				}
 			});
 		});
+
+		while (q.size > 0) {
+			const [elks, lastDir] = q.pop() as [string[], number];
+			const elkSize = elks.length;
+			const restElks = elkGroup.filter((elk) => !elks.includes(elk));
+			const result = this.calculateElkGroup(restElks);
+			const score = ElkScoringValueD[elkSize] + result.score;
+			if (score > maxScore) {
+				maxScore = score;
+				group = [elks, ...result.groups];
+			}
+
+			if(elkSize==6) continue;
+
+			const lastElk = elks[elkSize-1];
+			const nextDir = (lastDir+1)%6;
+
+			const nextElk = this.mapData.get(lastElk)!.coor.neighborKeys[nextDir];
+			if(this.mapData.has(nextElk))
+
+
+		}
 
 		return {
 			score: maxScore,
 			groups: group,
 		};
 	}
+
+	calculateCircular(elk: string, clockwise: boolean) {}
 
 	get score() {
 		return this.totalScore;
