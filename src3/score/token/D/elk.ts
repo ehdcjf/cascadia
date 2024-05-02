@@ -134,15 +134,15 @@ export class ElkScoring {
 				group = [elks, ...result.groups];
 			}
 
-			if(elkSize==6) continue;
+			if (elkSize == 6) continue;
 
-			const lastElk = elks[elkSize-1];
-			const nextDir = (lastDir+1)%6;
+			const lastElk = elks[elkSize - 1];
+			const nextDir = (lastDir + 1) % 6;
 
 			const nextElk = this.mapData.get(lastElk)!.coor.neighborKeys[nextDir];
-			if(this.mapData.has(nextElk))
-
-
+			if (restElks.includes(nextElk)) {
+				q.push([[...elks, nextElk], nextDir]);
+			}
 		}
 
 		return {
@@ -150,8 +150,6 @@ export class ElkScoring {
 			groups: group,
 		};
 	}
-
-	calculateCircular(elk: string, clockwise: boolean) {}
 
 	get score() {
 		return this.totalScore;
