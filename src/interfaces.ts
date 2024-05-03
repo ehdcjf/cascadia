@@ -1,27 +1,11 @@
-import { allPlacedTokens } from "./score/tile";
-
+export type WildLife = 'bear' | 'elk' | 'hawk' | 'salmon' | 'fox';
+export type Habitat = 'desert' | 'forest' | 'lake' | 'mountain' | 'swamp';
+export type TileInfo = { tileNum: string; habitats: Habitat[]; wildlife: WildLife[]; rotation: number };
 export type Tile = {
-  tileNum: string;
-  habitats: string[];
-  wildlife: string[];
-  rotation: 0 | 60 | 120 | 180 | 240 | 300 | 360; // increments of 60
+	tileNum: number;
+	placedToken: null | WildLife;
+	habitatSides: Array<Habitat | null>;
+	neighborhood: Array<string>;
 };
 
-export type WildLife = "bear" | "elk" | "hawk" | "salmon" | "fox";
-
-export abstract class Scoring {
-  protected allPlacedTokens: Record<string, string | false> = allPlacedTokens;
-
-  constructor(protected wildLife: WildLife) {}
-
-  get score() {
-    return this.calculate();
-  }
-
-  protected getTargetTokenIDs() {
-    return Object.entries(this.allPlacedTokens)
-      .filter(([_, value]) => value == this.wildLife)
-      .map((v) => v[0]);
-  }
-  protected abstract calculate(): number;
-}
+export type MapData = Map<string, Tile>;

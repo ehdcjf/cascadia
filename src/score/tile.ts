@@ -1,216 +1,106 @@
-import { WildLife } from "../interfaces";
-import { mapData } from "../setup";
-import { linkedTileSides } from "./const";
+import type { Habitat, Tile } from '../interfaces';
+import { Queue } from '../utils';
 
-export const allPlacedTiles: Record<
-  string,
-  {
-    tileNum: number;
-    row: number;
-    column: number;
-    habitats: string[];
-    habitatsSides: string[];
-  }
-> = {};
+// const indexMatch = [
+// 	[0, 3],
+// 	[1, 4],
+// 	[2, 5],
+// 	[3, 0],
+// 	[4, 1],
+// 	[5, 2],
+// ];
 
-export const allPlacedTokens: Record<string, WildLife> = {};
-const habitatsMaches: Record<
-  string,
-  {
-    placedTiles: number;
-    tilesWithMachedHabitats: any[];
-    finalSets: any[];
-    largestSet: number;
-  }
-> = {
-  desert: {
-    placedTiles: 0,
-    tilesWithMachedHabitats: [],
-    finalSets: [],
-    largestSet: 0,
-  },
-  forest: {
-    placedTiles: 0,
-    tilesWithMachedHabitats: [],
-    finalSets: [],
-    largestSet: 0,
-  },
-  lake: {
-    placedTiles: 0,
-    tilesWithMachedHabitats: [],
-    finalSets: [],
-    largestSet: 0,
-  },
-  mountain: {
-    placedTiles: 0,
-    tilesWithMachedHabitats: [],
-    finalSets: [],
-    largestSet: 0,
-  },
-  swamp: {
-    placedTiles: 0,
-    tilesWithMachedHabitats: [],
-    finalSets: [],
-    largestSet: 0,
-  },
-};
-
-const rotationIndexes = {
-  positive: [0, 60, 120, 180, 240, 300],
-  negative: [0, -300, -240, -180, -120, -60],
-};
-
-function processRotationFigure(rotation: number) {
-  if (rotation >= 360) return rotation % 360;
-  else if (rotation <= -360) return rotation % -360;
-  else return rotation;
+class HabitatScore {
+	placedTiles: Set<string>;
+	tilesWithMatchedHabitats: Map<number, Set<number>>;
+	largestSet: any[];
+	constructor() {
+		this.placedTiles = new Set();
+		this.tilesWithMatchedHabitats = new Map();
+		this.largestSet = new Array();
+	}
 }
 
-function findRotationIndex(rotation: number) {
-  if (rotation == 0) return 0;
-  const sign = Math.sign(rotation) != -1 ? "positive" : "negative";
-  return rotationIndexes[sign].indexOf(rotation);
-}
+export class TileScoring {
+	habitatsMaches: Record<Habitat, HabitatScore> = {
+		desert: new HabitatScore(),
+		forest: new HabitatScore(),
+		lake: new HabitatScore(),
+		mountain: new HabitatScore(),
+		swamp: new HabitatScore(),
+	};
+	tileNumtoID: Array<string> = new Array(24);
+	constructor(mapData: Map<string, Tile>) {
+		// 타일 전부순회하면서.
+		// 각 서식지에 대한 그래프를 만들 준비를 한다.
+		for (const [tileID, tile] of mapData) {
+			const { tileNum } = tile;
+			this.tileNumtoID[tileNum] = tileID;
+			const neighborhood = tile.neighborhood;
 
-export function processPlacedTileAndTokens() {
-  let tileNum = 1;
+			for (let dir = 0; dir < neighborhood.length; dir++) {
+				const myHabitat = tile.habitatSides[dir]!;
+				this.habitatsMaches[myHabitat].placedTiles.add(tileID);
+				const neighborKey = neighborhood[dir];
 
-  for (let i = 0; i < mapData.length; i++) {
-    for (let j = 0; j < mapData[i].length; j++) {
-      if (!mapData[i][j].placedTile) continue;
+				if (!mapData.has(neighborKey)) continue;
+				const neighborTile = mapData.get(neighborKey)!;
+				const neighborTileNum = neighborTile.tileNum;
+				const matchedDir = (dir + 3) % 6;
+				const neighborHabitat = neighborTile.habitatSides[matchedDir];
+				if (myHabitat === neighborHabitat) {
+					const [tile1, tile2] =
+						tileNum < neighborTileNum
+							? [tileNum, neighborTileNum]
+							: [neighborTileNum, tileNum];
 
-      const { row, column } = mapData[i][j];
-      const rotation = processRotationFigure(+mapData[i][j].rotation);
-      const numTurns = findRotationIndex(rotation);
-      const habitats: string[] = [];
-      const habitatsSides = new Array(6);
-      if (mapData[i][j].habitats.length == 1) {
-        const thisHabitat = mapData[i][j].habitats[0];
-        habitatsSides.fill(thisHabitat);
-        habitatsMaches[thisHabitat].placedTiles += 1;
-        habitats.push(thisHabitat);
-      } else if (mapData[i][j].habitats.length == 2) {
-        let habitatsLoaded = 0;
-        let turnedIndex = habitatsLoaded + numTurns;
-        const [firstHabitat, secondHabitat] = mapData[i][j].habitats;
-        habitatsMaches[firstHabitat].placedTiles += 1;
-        habitatsMaches[secondHabitat].placedTiles += 1;
-        habitats.push(firstHabitat, secondHabitat);
-        let currentHabitat = firstHabitat;
-        for (let k = 0; k < 6; k++) {
-          habitatsSides[turnedIndex] = currentHabitat;
-          turnedIndex++;
-          if (turnedIndex == 6) turnedIndex = 0;
-          habitatsLoaded++;
-          if (habitatsLoaded == 3) currentHabitat = secondHabitat;
-        }
-      }
+					if (!this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.has(tile1)) {
+						this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.set(
+							tile1,
+							new Set()
+						);
+					}
 
-      const key = `${row}-${column}`;
-      allPlacedTiles[key] = {
-        tileNum: tileNum,
-        row: row,
-        column: column,
-        habitats: habitats,
-        habitatsSides: habitatsSides,
-      };
+					const links =
+						this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.get(tile1)!;
+					links.add(tile2);
+					this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.set(tile1, links);
+					tile.habitatSides[dir] = null;
+				}
+			}
+		}
 
-      if (mapData[i][j].placedToken)
-        allPlacedTokens[key] = mapData[i][j].placedToken as WildLife;
-      tileNum++;
-    }
-  }
+		for (const habitatName in this.habitatsMaches) {
+			const habaitat = this.habitatsMaches[habitatName as Habitat];
+			if (habaitat.placedTiles.size == 0) continue;
+			else if (habaitat.placedTiles.size == 1) {
+				habaitat.largestSet = [...habaitat.placedTiles];
+				continue;
+			}
+			const matchedHabitats = habaitat.tilesWithMatchedHabitats;
 
-  const tileIDs = Object.keys(allPlacedTiles);
+			for (const [tileNum] of matchedHabitats) {
+				const q = new Queue();
+				const visitedHabitats: Set<number> = new Set();
+				q.push(tileNum);
+				visitedHabitats.add(tileNum);
 
-  for (const tileID of tileIDs) {
-    const row = allPlacedTiles[tileID].row;
-    const column = allPlacedTiles[tileID].column;
-    const rowColMapSet = row % 2 == 0 ? 0 : 1;
+				while (q.size > 0) {
+					const now = q.pop();
+					if (matchedHabitats.has(now)) {
+						const links = matchedHabitats.get(now)!;
+						for (const nextTile of links) {
+							visitedHabitats.add(nextTile);
+						}
+					}
+					matchedHabitats.delete(tileNum);
+				}
+				if (habaitat.largestSet.length < visitedHabitats.size) {
+					habaitat.largestSet = [...visitedHabitats].map((v) => this.tileNumtoID[v]);
+				}
+			}
+		}
 
-    for (let i = 0; i < linkedTileSides.length; i++) {
-      const newRow =
-        row + linkedTileSides[i].rowColMapping[rowColMapSet].rowDiff;
-      const newColumn =
-        column + linkedTileSides[i].rowColMapping[rowColMapSet].columnDiff;
-      const newTileID = `${newRow}-${newColumn}`;
-      if (allPlacedTiles.hasOwnProperty(newTileID)) {
-        const [m1, m2] = linkedTileSides[i].indexMatch.split("-").map(Number);
-        if (
-          allPlacedTiles[tileID].habitatsSides[m1] ==
-          allPlacedTiles[newTileID].habitatsSides[m2]
-        ) {
-          const tileNum = allPlacedTiles[tileID].tileNum;
-          const matchedTileNum = allPlacedTiles[newTileID].tileNum;
-          const key = `${tileNum}-${matchedTileNum}`;
-          habitatsMaches[
-            allPlacedTiles[tileID].habitatsSides[m1]
-          ].tilesWithMachedHabitats.push(key);
-        }
-      }
-    }
-  }
-
-  for (const habitat of Object.keys(habitatsMaches)) {
-    const currentHabitat = habitatsMaches[habitat];
-    if (currentHabitat.placedTiles == 0) continue;
-    if (currentHabitat.tilesWithMachedHabitats.length == 0) {
-      currentHabitat.largestSet = 1;
-      continue;
-    }
-
-    const linkedTiles: any[] = JSON.parse(
-      JSON.stringify(currentHabitat.tilesWithMachedHabitats)
-    );
-
-    while (linkedTiles.length > 0) {
-      const tileQueue: any[] = [];
-      const tileGroup: any[] = [];
-
-      const firstTiles = linkedTiles.pop();
-      const [tile1, tile2] = firstTiles.split("-");
-      const reverseTileMatch = `${tile2}-${tile1}`;
-      const reverseTileIndex = linkedTiles.indexOf(reverseTileMatch);
-
-      if (reverseTileIndex > -1) linkedTiles.splice(reverseTileIndex, 1);
-
-      tileQueue.push(tile1, tile2);
-
-      while (tileQueue.length > 0) {
-        for (let k = linkedTiles.length - 1; k >= 0; k--) {
-          const tileToCheckString = linkedTiles[k].toString();
-          const tileToCheckSplit = tileToCheckString.split("-");
-          if (tileQueue[0] != tileToCheckSplit[0]) continue;
-          const matched = linkedTiles.splice(k, 1);
-          const mathedString = matched.toString();
-          const mtile = mathedString.split("-")[1];
-          if (
-            tileQueue.indexOf(mtile) === -1 &&
-            tileGroup.indexOf(mtile) === -1
-          ) {
-            tileQueue.push(mtile);
-          }
-        }
-        const lastTileChecked = tileQueue.shift();
-        tileGroup.push(lastTileChecked);
-      }
-
-      if (tileGroup.length > currentHabitat.largestSet) {
-        currentHabitat.largestSet = tileGroup.length;
-      }
-      currentHabitat.finalSets.push(tileGroup);
-    }
-  }
-  calculateHabitatScoring();
-}
-
-function calculateHabitatScoring() {
-  const result = Object.entries(habitatsMaches).reduce((r: any, v) => {
-    const [name, info] = v;
-    const bonus = info.largestSet > 6 ? 2 : 0;
-    r.push([name, info.largestSet, bonus]);
-    return r;
-  }, []);
-
-  console.table(result);
+		console.log(this.habitatsMaches);
+	}
 }

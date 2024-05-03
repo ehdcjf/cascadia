@@ -1,21 +1,33 @@
-export function allPossibleCases(arr: any[]) {}
-
-export function indexOfMax(arr: number[]) {
-  if (arr.length == 0) return -1;
-  let max = arr[0];
-  let maxIndex = 0;
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) {
-      maxIndex = i;
-      max = arr[i];
-    }
-  }
-  return maxIndex;
-}
-export function idToRowColumn(id: string) {
-  return id.split("-").map(Number);
+export class Item<T> {
+        next: null | Item<T> = null;
+        constructor(public value: any) {}
 }
 
-export function getRowColMapIndex(row: number) {
-  return row % 2 == 0 ? 0 : 1;
+export class Queue<T> {
+        head: null | Item<T> = null;
+        tail: null | Item<T> = null;
+        size = 0;
+        constructor() {}
+
+        push(value: any) {
+                const node = new Item(value);
+                if (this.head == null) {
+                        this.head = node;
+                } else if (this.tail) {
+                        this.tail.next = node;
+                }
+                this.tail = node;
+                this.size += 1;
+        }
+
+        pop() {
+                if (this.head) {
+                        const popItem = this.head;
+                        this.head = this.head.next;
+                        this.size -= 1;
+                        return popItem.value;
+                } else {
+                        return null;
+                }
+        }
 }

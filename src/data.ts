@@ -1,6 +1,6 @@
-import { Tile } from "./interfaces";
+import { TileInfo } from "./interfaces";
 
-export const startingTiles = [
+export const startingTiles: TileInfo[][] = [
         [
                 {
                         tileNum: "1",
@@ -103,7 +103,7 @@ export const startingTiles = [
         ],
 ];
 
-export const tiles: Tile[] = [
+export const tiles: TileInfo[] = [
         {
                 tileNum: "16",
                 habitats: ["mountain"],
