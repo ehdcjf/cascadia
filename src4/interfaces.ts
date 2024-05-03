@@ -7,3 +7,5 @@ export type Tile = {
 	habitatSides: Array<Habitat | null>;
 	neighborhood: Array<string>;
 };
+
+export type MapData = Map<string, Tile>;
