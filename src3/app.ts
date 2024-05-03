@@ -99,11 +99,12 @@ class App {
 	}
 
 	private async loadAssetAsync() {
-		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia.glb', this.scene);
+		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia5.glb', this.scene);
 		assets.meshes.forEach((mesh, i) => {
 			console.log(mesh.id);
 			mesh.visibility = 0;
 		});
+	
 	}
 }
 
