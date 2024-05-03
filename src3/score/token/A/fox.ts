@@ -11,6 +11,7 @@ const FoxScoringValue: Record<number, number> = {
 
 export class FoxScoring {
 	private totalScore = 0;
+	private confirmedTiles: Array<Array<string>> = [];
 	constructor(mapData: Map<string, MapItem>) {
 		for (const [key, mapItem] of mapData) {
 			if (mapItem.placedToken != 'fox') continue;
@@ -21,7 +22,10 @@ export class FoxScoring {
 				const neighborItem = mapData.get(nkey)!;
 				if (neighborItem.placedToken) uniqueWildLife.add(neighborItem.placedToken);
 			}
-			this.totalScore += FoxScoringValue[uniqueWildLife.size];
+			if (uniqueWildLife.size > 0) {
+				this.totalScore += FoxScoringValue[uniqueWildLife.size];
+				this.confirmedTiles.push([key]);
+			}
 		}
 	}
 
