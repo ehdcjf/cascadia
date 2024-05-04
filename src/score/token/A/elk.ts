@@ -1,4 +1,4 @@
-import { MapItem } from '../../../board';
+import { MapData } from '../../../interfaces';
 import { Queue } from '../../../utils';
 const ElkScoringValue: Record<number, number> = {
 	0: 0,
@@ -11,8 +11,8 @@ const ElkScoringValue: Record<number, number> = {
 export class ElkScoring {
 	private totalScore = 0;
 
-	constructor(private mapData: Map<string, MapItem>) {
-		const allElks = [];
+	constructor(private mapData: MapData) {
+		const allElks: string[] = [];
 
 		for (const [key, mapItem] of this.mapData) {
 			if (mapItem.placedToken == 'elk') allElks.push(key);
@@ -26,17 +26,17 @@ export class ElkScoring {
 	}
 
 	private groupElkIds(elkIDs: string[]) {
-		const allElkGroups = [];
+		const allElkGroups: string[][] = [];
 		const visited = new Set();
 		for (const key of elkIDs) {
-			const ellElkGroup = [];
+			const ellElkGroup: string[] = [];
 			const q = new Queue();
 			q.push(key);
 			ellElkGroup.push(key);
 			visited.add(key);
 			while (q.size > 0) {
 				const token = q.pop();
-				const neighborhood = this.mapData.get(token)!.coor.neighborKeys;
+				const neighborhood = this.mapData.get(token)!.neighborhood;
 				for (const neighborKey of neighborhood) {
 					const neighborToken = this.mapData.get(neighborKey);
 					if (!neighborToken) continue;
@@ -55,7 +55,7 @@ export class ElkScoring {
 	private searchNeighborhoodElkKeys(tokenKey: string) {
 		const neighborhoodElk: string[] = [];
 		const mapItem = this.mapData.get(tokenKey)!;
-		const neighborTileKeys = mapItem.coor.neighborKeys;
+		const neighborTileKeys = mapItem.neighborhood;
 		for (const neighborTileKey of neighborTileKeys) {
 			if (!this.mapData.has(neighborTileKey)) continue;
 			const neighborTile = this.mapData.get(neighborTileKey)!;
@@ -118,7 +118,7 @@ export class ElkScoring {
 
 	private isStartingElk(elkToken: string) {
 		const nextDirections: number[] = [];
-		const neighborTileKeys = this.mapData.get(elkToken)!.coor.neighborKeys;
+		const neighborTileKeys = this.mapData.get(elkToken)!.neighborhood;
 		const checkDir = [
 			[0, 3],
 			[4, 1],
@@ -155,7 +155,7 @@ export class ElkScoring {
 	}
 
 	nextElkInDirection(tokenKey: string, direction: number) {
-		const neighborhood = this.mapData.get(tokenKey)!.coor.neighborKeys;
+		const neighborhood = this.mapData.get(tokenKey)!.neighborhood;
 		const potentialTokenKey = neighborhood[direction];
 		if (!this.mapData.has(potentialTokenKey)) return false;
 		const potentialToken = this.mapData.get(potentialTokenKey);

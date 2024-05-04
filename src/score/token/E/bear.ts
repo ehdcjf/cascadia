@@ -1,15 +1,15 @@
-import { MapItem } from '../../../board';
+import { MapData } from '../../../interfaces';
 import { Queue } from '../../../utils';
 const BearScoringValueE = 3;
 
 export class BearScoring {
 	private confirmedTiles: Array<Array<string>> = [];
-	constructor(mapData: Map<string, MapItem>) {
+	constructor(mapData: MapData) {
 		const visited: Set<string> = new Set();
 
 		for (const [key, mapItem] of mapData) {
 			if (mapItem.placedToken != 'bear' || visited.has(key)) continue;
-			const neighborKeys = mapData.get(key)!.coor.neighborKeys;
+			const neighborKeys = mapData.get(key)!.neighborhood;
 			// const unoccupiedTile: string[] = [];
 			let unoccupiedTile = 0;
 			let notBear = 0;

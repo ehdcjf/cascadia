@@ -1,4 +1,4 @@
-import { MapItem } from '../../../board';
+import { MapData } from '../../../interfaces';
 import { Queue } from '../../../utils';
 const FoxScoringValueD: Record<number, number> = {
 	0: 0,
@@ -38,7 +38,7 @@ const FoxScoringValueD: Record<number, number> = {
 export class FoxScoring {
 	private totalScore = 0;
 	private confirmedTiles: Array<Array<string>> = [];
-	constructor(private readonly mapData: Map<string, MapItem>) {}
+	constructor(private readonly mapData: MapData) {}
 
 	findAllFoxGroups() {
 		const allFoxGroups = [];
@@ -52,7 +52,7 @@ export class FoxScoring {
 
 			while (q.size > 0) {
 				const fox = q.pop();
-				const neighborKeys = this.mapData.get(fox)!.coor.neighborKeys;
+				const neighborKeys = this.mapData.get(fox)!.neighborhood;
 				for (const neighborKey of neighborKeys) {
 					if (!this.mapData.has(neighborKey)) continue;
 					if (visited.has(neighborKey)) continue;

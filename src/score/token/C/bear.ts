@@ -1,4 +1,4 @@
-import { MapItem } from '../../../board';
+import { MapData } from '../../../interfaces';
 import { Queue } from '../../../utils';
 
 /**
@@ -16,7 +16,7 @@ const Bonus = 3 as const;
 export class BearScoring {
 	private totalScore = 0;
 	private confirmedTiles: Array<Array<string>> = [];
-	constructor(mapData: Map<string, MapItem>) {
+	constructor(mapData: MapData) {
 		const visited: Set<string> = new Set();
 		let bonuseCheck = 0;
 		for (const [key, mapItem] of mapData) {
@@ -28,7 +28,7 @@ export class BearScoring {
 
 			while (q.size > 0) {
 				const bear = q.pop();
-				const bearNeighborhoodKeys = mapData.get(bear)!.coor.neighborKeys;
+				const bearNeighborhoodKeys = mapData.get(bear)!.neighborhood;
 				for (const neighborKey of bearNeighborhoodKeys) {
 					if (!mapData.has(neighborKey) || visited.has(neighborKey)) continue;
 					const neighbor = mapData.get(neighborKey)!;

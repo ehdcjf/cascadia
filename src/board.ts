@@ -11,7 +11,7 @@ const H = 1.5;
 const W = Math.cos(Math.PI / 6);
 
 export class Board {
-	// protected mapData: Map<string, MapItem> = new Map();
+	// protected mapData: MapData = new Map();
 	protected mapData: Map<string, Tile> = new Map();
 	protected possiblePath: Map<string, AbstractMesh> = new Map();
 	tfNode: TransformNode;

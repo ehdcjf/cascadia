@@ -1,5 +1,4 @@
-import { MapItem } from '../../../board';
-import { WildLife } from '../../../interfaces';
+import { WildLife, MapData } from '../../../interfaces';
 const FoxScoringValue: Record<number, number> = {
 	0: 0,
 	1: 1,
@@ -12,10 +11,10 @@ const FoxScoringValue: Record<number, number> = {
 export class FoxScoring {
 	private totalScore = 0;
 	private confirmedTiles: Array<Array<string>> = [];
-	constructor(mapData: Map<string, MapItem>) {
+	constructor(mapData: MapData) {
 		for (const [key, mapItem] of mapData) {
 			if (mapItem.placedToken != 'fox') continue;
-			const neighborKeys = mapItem.coor.neighborKeys;
+			const neighborKeys = mapItem.neighborhood;
 			const uniqueWildLife: Set<WildLife> = new Set();
 			for (const nkey of neighborKeys) {
 				if (!mapData.has(nkey)) continue;

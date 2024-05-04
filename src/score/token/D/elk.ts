@@ -1,6 +1,5 @@
-import { Coordinates } from '../../../board';
-import { MapItem } from '../../../board';
-import { Queue } from '../../../utils';
+import { MapData } from '../../../interfaces';
+import { Queue, qrsFromTileID } from '../../../utils';
 const ElkScoringValueD: Record<number, number> = {
 	0: 0,
 	1: 2,
@@ -15,8 +14,8 @@ export class ElkScoring {
 	private totalScore = 0;
 	private confirmedTiles: Array<Array<string>> = [];
 
-	constructor(private mapData: Map<string, MapItem>) {
-		const allElks = [];
+	constructor(private mapData: MapData) {
+		const allElks: string[] = [];
 
 		for (const [key, mapItem] of this.mapData) {
 			if (mapItem.placedToken == 'elk') allElks.push(key);
@@ -32,17 +31,17 @@ export class ElkScoring {
 	}
 
 	private groupElkIds(elkIDs: string[]) {
-		const allElkGroups = [];
+		const allElkGroups: string[][] = [];
 		const visited = new Set();
 		for (const key of elkIDs) {
-			const ellElkGroup = [];
+			const ellElkGroup: string[] = [];
 			const q = new Queue();
 			q.push(key);
 			ellElkGroup.push(key);
 			visited.add(key);
 			while (q.size > 0) {
 				const token = q.pop();
-				const neighborhood = this.mapData.get(token)!.coor.neighborKeys;
+				const neighborhood = this.mapData.get(token)!.neighborhood;
 				for (const neighborKey of neighborhood) {
 					const neighborToken = this.mapData.get(neighborKey);
 					if (!neighborToken) continue;
@@ -58,12 +57,9 @@ export class ElkScoring {
 		return allElkGroups;
 	}
 
-	private calcDistanceByQRS(a: Coordinates, b: Coordinates) {
-		const x = a.qrs;
-		const y = b.qrs;
+	private calcDistanceByQRS(x: { q: number; r: number; s: number }, y: { q: number; r: number; s: number }) {
 		return (Math.abs(x.q - y.q) + Math.abs(x.r - y.r) + Math.abs(x.s - y.s)) / 2;
 	}
-
 	private calculateElkGroup(elkGroup: string[]): { score: number; groups: string[][] } {
 		let score = 0;
 		const groups: string[][] = [];
@@ -77,7 +73,7 @@ export class ElkScoring {
 				break;
 
 			case 2:
-				const [first, second] = elkGroup.map((key) => this.mapData.get(key)!.coor);
+				const [first, second] = elkGroup.map((key) => qrsFromTileID(key));
 				const distance = this.calcDistanceByQRS(first, second);
 				if (distance == 1) {
 					score = ElkScoringValueD[2];
@@ -113,7 +109,7 @@ export class ElkScoring {
 		const q = new Queue();
 
 		elkGroup.forEach((elkKey) => {
-			const neighborKeys = this.mapData.get(elkKey)!.coor.neighborKeys;
+			const neighborKeys = this.mapData.get(elkKey)!.neighborhood;
 
 			neighborKeys.forEach((neighborKey, lastDir) => {
 				if (elkGroup.includes(neighborKey)) {
@@ -139,7 +135,7 @@ export class ElkScoring {
 			const lastElk = elks[elkSize - 1];
 			const nextDir = (lastDir + 1) % 6;
 
-			const nextElk = this.mapData.get(lastElk)!.coor.neighborKeys[nextDir];
+			const nextElk = this.mapData.get(lastElk)!.neighborhood[nextDir];
 			if (restElks.includes(nextElk)) {
 				q.push([[...elks, nextElk], nextDir]);
 			}

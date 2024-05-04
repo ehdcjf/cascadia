@@ -1,4 +1,4 @@
-import { MapItem } from '../../../board';
+import { MapData } from '../../../interfaces';
 import { Queue } from '../../../utils';
 const SalmonScoringValueB: Record<number, number> = {
 	0: 0,
@@ -12,12 +12,12 @@ const SalmonScoringValueB: Record<number, number> = {
 export class SalmonScoring {
 	private totalScore = 0;
 	private confirmedTiles: Array<Array<string>> = [];
-	constructor(mapData: Map<string, MapItem>) {
+	constructor(mapData: MapData) {
 		const allSalmons: Set<string> = new Set();
 		const invalidSalmon: Set<string> = new Set();
 		for (const [key, mapItem] of mapData) {
 			if (mapItem.placedToken != 'salmon') continue;
-			const neighborKeys = mapItem.coor.neighborKeys;
+			const neighborKeys = mapItem.neighborhood;
 			const neighborSalmonCount = neighborKeys.filter(
 				(neighborKey) => mapData.get(neighborKey)?.placedToken == 'salmon'
 			).length;
@@ -28,9 +28,7 @@ export class SalmonScoring {
 				invalidSalmon.add(key);
 			}
 		}
-		//  큐로 그냥 돌리면 안됨... 
-
-
+		//  큐로 그냥 돌리면 안됨...
 
 		// const visied = new Set();
 
@@ -44,7 +42,7 @@ export class SalmonScoring {
 		// 	while (q.size > 0) {
 		// 		const now = q.pop();
 
-		// 		const neighborKeys = mapData.get(now)!.coor.neighborKeys;
+		// 		const neighborKeys = mapData.get(now)!.neighborhood;
 		// 		for (const neighborKey of neighborKeys) {
 		// 			if (!allSalmons.has(neighborKey)) continue;
 		// 			if (visied.has(neighborKey)) continue;

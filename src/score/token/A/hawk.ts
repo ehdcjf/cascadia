@@ -1,4 +1,4 @@
-import { MapItem } from '../../../board';
+import { MapData } from '../../../interfaces';
 const HawkScoringValue: Record<number, number> = {
 	0: 0,
 	1: 2,
@@ -13,12 +13,12 @@ const HawkScoringValue: Record<number, number> = {
 
 export class HawkScoring {
 	private totalScore = 0;
-	constructor(mapData: Map<string, MapItem>) {
+	constructor(mapData: MapData) {
 		let isolatedHawksCount = 0;
 		for (const [key, mapItem] of mapData) {
 			if (mapItem.placedToken != 'hawk') continue;
 
-			const neighborKeys = mapItem.coor.neighborKeys;
+			const neighborKeys = mapItem.neighborhood;
 			let isIsolated = true;
 			for (const nkey of neighborKeys) {
 				if (!mapData.has(nkey)) continue;

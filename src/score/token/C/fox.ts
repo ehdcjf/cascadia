@@ -1,4 +1,4 @@
-import { MapItem } from '../../../board';
+import { MapData } from '../../../interfaces';
 const FoxScoringValueC: Record<number, number> = {
 	0: 0,
 	1: 1,
@@ -12,10 +12,10 @@ const FoxScoringValueC: Record<number, number> = {
 export class FoxScoring {
 	private totalScore = 0;
 	private confirmedTiles: Array<Array<string>> = [];
-	constructor(mapData: Map<string, MapItem>) {
+	constructor(mapData: MapData) {
 		for (const [key, mapItem] of mapData) {
 			if (mapItem.placedToken != 'fox') continue;
-			const neighborKeys = mapItem.coor.neighborKeys;
+			const neighborKeys = mapItem.neighborhood;
 
 			const mostAbundantCount = neighborKeys
 				.map((key) => mapData.get(key)?.placedToken)

@@ -1,4 +1,4 @@
-import { MapItem } from '../../../board';
+import { MapData } from '../../../interfaces';
 import { Queue } from '../../../utils';
 const SalmonScoringValue: Record<number, number> = {
 	1: 2,
@@ -15,7 +15,7 @@ export class SalmonScoring {
 	private usedToken: Set<string> = new Set();
 	private confirmedSalmonRuns: Array<Set<string>> = [];
 	private totalScore = 0;
-	constructor(private mapData: Map<string, MapItem>) {
+	constructor(private mapData: MapData) {
 		this.calculateSalmonToken();
 	}
 
@@ -23,7 +23,7 @@ export class SalmonScoring {
 		const neighborSalmons: string[] = [];
 
 		const mapItem = this.mapData.get(tokenKey)!;
-		const neighborTileKeys = mapItem.coor.neighborKeys;
+		const neighborTileKeys = mapItem.neighborhood;
 		for (const neighborTileKey of neighborTileKeys) {
 			if (!this.mapData.has(neighborTileKey)) continue;
 			const neighborTile = this.mapData.get(neighborTileKey)!;
@@ -59,8 +59,8 @@ export class SalmonScoring {
 				const [firstNeighborKey, secondNeighborKey] = confirmedNeighborSalmons;
 
 				// 하나만 체크해도 될듯?
-				const firstNeighborhood = this.mapData.get(firstNeighborKey)!.coor.neighborKeys;
-				const secondNeighborhood = this.mapData.get(secondNeighborKey)!.coor.neighborKeys;
+				const firstNeighborhood = this.mapData.get(firstNeighborKey)!.neighborhood;
+				const secondNeighborhood = this.mapData.get(secondNeighborKey)!.neighborhood;
 
 				if (
 					!firstNeighborhood.includes(secondNeighborKey) &&
@@ -97,7 +97,7 @@ export class SalmonScoring {
 	}
 
 	private salmonTokensInRun(startKey: string) {
-		const salmonRunIDs = [];
+		const salmonRunIDs :string[]= [];
 		const q = new Queue();
 
 		salmonRunIDs.push(startKey);
