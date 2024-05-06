@@ -11,3 +11,8 @@ export type Tile = {
 
 export type MapData = Map<string, Tile>;
 export type QRS = { q: number; r: number; s: number };
+
+export type GroupResult = {
+	score: number;
+	groups: string[][];
+};
