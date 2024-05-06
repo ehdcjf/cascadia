@@ -40,6 +40,8 @@ export class HawkScoring {
 	private confirmedTiles: Array<Array<string>> = [];
 	constructor(mapData: MapData) {
 		const allIsolatedHawks: string[] = [];
+		const potentialHawksQRS: QRS[] = [];
+		// 고립된 매 찾기
 		for (const [key, mapItem] of mapData) {
 			if (mapItem.placedToken != 'hawk') continue;
 
@@ -55,27 +57,21 @@ export class HawkScoring {
 			}
 			if (isIsolated) {
 				allIsolatedHawks.push(key);
+				potentialHawksQRS.push(qrsFromTileID(key));
 			}
 		}
-
-		const potentialHawksQRS = allIsolatedHawks.map((key) => qrsFromTileID(key));
 
 		const confirmedHawk: Set<string> = new Set();
 
 		for (let i = 0; i < allIsolatedHawks.length - 1; i++) {
-			let isLineOfSight = false;
-			if (confirmedHawk.has(allIsolatedHawks[i])) continue;
 			const hawkA = potentialHawksQRS[i];
 			for (let j = i + 1; j < allIsolatedHawks.length; j++) {
 				const hawkB = potentialHawksQRS[j];
 				if (this.checkLineOfSight(hawkA, hawkB)) {
-					isLineOfSight = true;
 					confirmedHawk.add(allIsolatedHawks[i]);
 					confirmedHawk.add(allIsolatedHawks[j]);
-					break;
 				}
 			}
-			if (isLineOfSight) break;
 		}
 
 		this.confirmedTiles = [...confirmedHawk].map((key) => [key]);
@@ -83,21 +79,18 @@ export class HawkScoring {
 		const confirmedHawkCount = this.confirmedTiles.length > 8 ? 8 : this.confirmedTiles.length;
 		this.totalScore = HawkScoringValueB[confirmedHawkCount];
 	}
-
-	// 이 메서드 문제가 있는데,
-	// 중간에 매가 있는지에 대해서는 확인을 하지 않음.
-	// 가시선은  매와 매 사이에 매가 없어야 되는데,
-	// B 규칙에서는 아무튼 가시선으로 이어져 있는지만 확인하지 때문에
-	// 두 매 사이에 매가 있어도 상관이 없음.
 	private checkLineOfSight(hawkA: QRS, hawkB: QRS) {
 		const Q = Math.abs(hawkA.q - hawkB.q);
 		const R = Math.abs(hawkA.r - hawkB.r);
 		const S = Math.abs(hawkA.s - hawkB.s);
 
-		if ((Q == 0 && R == S) || (R == 0 && Q == S) || (S == 0 && Q == R)) {
+		if (Q == 0 && R == S && hawkA.r < hawkB.r) {
 			return true;
-		}
-		return false;
+		} else if (R == 0 && Q == S && hawkA.q < hawkB.q) {
+			return true;
+		} else if (S == 0 && Q == R && hawkA.q < hawkB.q) {
+			return true;
+		} else return false;
 	}
 
 	get score() {

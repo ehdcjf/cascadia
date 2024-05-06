@@ -14,9 +14,7 @@ import { qrsFromTileID } from '../../../utils';
  *
  * 확정된 가시선에 대해 [시작매, 끝매]  이런식으로 담아서 관리하면 될듯
  *
- * 0 북동쪽 방향:  q+1 ,r-1, s
- * 1 동쪽 방향:  q+1 ,r, s-1
- * 2 남동쪽 방향:  q ,r+1, s-1
+
  */
 
 const HawkScoringValueC = 3;
@@ -24,67 +22,74 @@ const HawkScoringValueC = 3;
 export class HawkScoring {
 	private totalScore = 0;
 	private confirmedTiles: Array<Array<string>> = [];
-	constructor(mapData: MapData) {
+	constructor(private readonly mapData: MapData) {
 		const allIsolatedHawks: string[] = [];
-		for (const [key, mapItem] of mapData) {
-			if (mapItem.placedToken != 'hawk') continue;
 
-			const neighborKeys = mapItem.neighborhood;
-			let isIsolated = true;
-			for (const nkey of neighborKeys) {
-				if (!mapData.has(nkey)) continue;
-				const neighborItem = mapData.get(nkey)!;
-				if (neighborItem.placedToken == 'hawk') {
-					isIsolated = false;
-					break;
-				}
-			}
-			if (isIsolated) {
-				allIsolatedHawks.push(key);
-			}
+		// 일단  매 전부 찾고.
+		for (const [key, mapItem] of mapData) {
+			if (mapItem.placedToken == 'hawk') allIsolatedHawks.push(key);
 		}
 
+		// 매 좌표 뽑아낸다음.
 		const potentialHawksQRS = allIsolatedHawks.map((key) => qrsFromTileID(key));
 
-		const confirmedHawk: Set<string> = new Set();
-
-		for (let i = 0; i < allIsolatedHawks.length - 1; i++) {
-			let isLineOfSight = false;
-			if (confirmedHawk.has(allIsolatedHawks[i])) continue;
+		for (let i = 0; i < allIsolatedHawks.length; i++) {
 			const hawkA = potentialHawksQRS[i];
-			for (let j = i + 1; j < allIsolatedHawks.length; j++) {
+			for (let j = 0; j < allIsolatedHawks.length; j++) {
+				if (i == j) continue;
 				const hawkB = potentialHawksQRS[j];
 				if (this.checkLineOfSight(hawkA, hawkB)) {
-					isLineOfSight = true;
-					confirmedHawk.add(allIsolatedHawks[i]);
-					confirmedHawk.add(allIsolatedHawks[j]);
-					break;
+					this.confirmedTiles.push([allIsolatedHawks[i], allIsolatedHawks[j]]);
 				}
 			}
-			if (isLineOfSight) break;
 		}
 
-		this.confirmedTiles = [...confirmedHawk].map((key) => [key]);
-
-		const confirmedHawkCount = this.confirmedTiles.length > 8 ? 8 : this.confirmedTiles.length;
-		this.totalScore = HawkScoringValueB[confirmedHawkCount];
+		this.totalScore = this.confirmedTiles.length * HawkScoringValueC;
 	}
 
 	private checkLineOfSight(hawkA: QRS, hawkB: QRS) {
+		const hawkClone = { ...hawkA };
 		const Q = Math.abs(hawkA.q - hawkB.q);
 		const R = Math.abs(hawkA.r - hawkB.r);
 		const S = Math.abs(hawkA.s - hawkB.s);
 
-		if (Q == 0 && R == S) {
-			const sign = Math.sign(hawkB.r-hawkA.r);
-			 
-
-
-
-
-		} else if (R == 0 && Q == S) {
-		} else if (S == 0 && Q == R) {
+		if (Q == 0 && R == S && hawkA.r < hawkB.r) {
+			// 남동쪽 확인
+			// 2 남동쪽 방향:  q ,r+1, s-1
+			for (let i = 1; i < R; i++) {
+				hawkClone.r += 1;
+				hawkClone.s -= 1;
+				const token = this.placedTokenFromQRS(hawkClone);
+				if (token == 'hawk') return false;
+			}
+			return true;
+		} else if (R == 0 && Q == S && hawkA.q < hawkB.q) {
+			// 동쪽 확인
+			// 1 동쪽 방향:  q+1 ,r, s-1
+			for (let i = 1; i < Q; i++) {
+				hawkClone.q += 1;
+				hawkClone.s -= 1;
+				const token = this.placedTokenFromQRS(hawkClone);
+				if (token == 'hawk') return false;
+			}
+			return true;
+		} else if (S == 0 && Q == R && hawkA.q < hawkB.q) {
+			// 북동쪽 확인
+			// 0 북동쪽 방향:  q+1 ,r-1, s
+			for (let i = 1; i < Q; i++) {
+				hawkClone.q += 1;
+				hawkClone.r -= 1;
+				const token = this.placedTokenFromQRS(hawkClone);
+				if (token == 'hawk') return false;
+			}
+			return true;
 		} else return false;
+	}
+
+	placedTokenFromQRS(hawkQRS: QRS) {
+		const { q, r, s } = hawkQRS;
+		const tileID = `tile[${q}][${r}][${s}]`;
+		return this.mapData.get(tileID)?.placedToken ?? null;
 	}
 
 	get score() {
