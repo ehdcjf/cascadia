@@ -8,12 +8,12 @@ export abstract class BearScoring {
 	constructor(protected readonly mapData: MapData) {
 		const visied: Set<string> = new Set();
 
-		for (const [key, tile] of mapData) {
-			if (tile.placedToken !== 'bear' || visied.has(key)) continue;
-			const bearGroup: string[] = [key];
+		for (const [tileID, tile] of mapData) {
+			if (tile.placedToken !== 'bear' || visied.has(tileID)) continue;
+			const bearGroup: string[] = [tileID];
 			const q = new Queue<string>();
-			q.push(key);
-			visied.add(key);
+			q.push(tileID);
+			visied.add(tileID);
 			while (q.size > 0) {
 				const bear = q.pop()!;
 				const neighborhood = mapData.get(bear)!.neighborhood;
