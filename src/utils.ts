@@ -1,3 +1,5 @@
+import { QRS } from './interfaces';
+
 export class Item<T> {
 	next: null | Item<T> = null;
 	constructor(public value: any) {}
@@ -9,7 +11,7 @@ export class Queue<T> {
 	size = 0;
 	constructor() {}
 
-	push(value: any) {
+	push(value: T) {
 		const node = new Item(value);
 		if (this.head == null) {
 			this.head = node;
@@ -20,7 +22,7 @@ export class Queue<T> {
 		this.size += 1;
 	}
 
-	pop() {
+	pop(): null | T {
 		if (this.head) {
 			const popItem = this.head;
 			this.head = this.head.next;
@@ -31,8 +33,6 @@ export class Queue<T> {
 		}
 	}
 }
-
-
 
 export function qrsFromTileID(tileID: string) {
 	const regex = /tile\[(-?\d+)\]\[(-?\d+)\]\[(-?\d+)\]/;
