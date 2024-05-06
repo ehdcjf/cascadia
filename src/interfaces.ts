@@ -6,6 +6,7 @@ export type Tile = {
 	placedToken: null | WildLife;
 	habitatSides: Array<Habitat | null>;
 	neighborhood: Array<string>;
+	qrs: QRS;
 };
 
 export type MapData = Map<string, Tile>;

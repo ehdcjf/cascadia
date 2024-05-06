@@ -134,6 +134,7 @@ export class Board {
 			placedToken: null,
 			habitatSides: this.getHabitatSides(tileInfo.habitats, rotation),
 			neighborhood: this.getNeighborTileIDs(tileID),
+			qrs: this.qrsFromTileID(tileID),
 		};
 		this.mapData.set(tileID, tile);
 	}
@@ -161,17 +162,14 @@ export class Board {
 		const regex = /tile\[(-?\d+)\]\[(-?\d+)\]\[(-?\d+)\]/;
 		const matches = tileID.match(regex);
 		if (matches) {
-			const q = matches[1];
-			const r = matches[2];
-			const s = matches[3];
-			return [q, r, s].map(Number);
+			return { q: +matches[1], r: +matches[2], s: +matches[3] };
 		} else {
 			throw new Error('Tlqkf');
 		}
 	}
 
 	private getNeighborTileIDs(tileID: string) {
-		const [q, r, s] = this.qrsFromTileID(tileID);
+		const { q, r, s } = this.qrsFromTileID(tileID);
 		return [
 			[1, -1, 0], // NE
 			[1, 0, -1], // E
