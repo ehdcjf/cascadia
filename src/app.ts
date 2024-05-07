@@ -87,24 +87,13 @@ class App {
 			this.scene
 		);
 
-		const camera3 = new ArcRotateCamera(
-			'camera3',
-			Tools.ToRadians(0),
-			Tools.ToRadians(90),
-			10,
-			Vector3.Zero(),
-			this.scene
-		);
-
 		camera.attachControl(true);
-		camera.viewport = new Viewport(0.2, 0.1, 0.8, 0.9);
+		camera.viewport = new Viewport(0.2, 0, 0.8, 1);
 		camera2.viewport = new Viewport(0, 0, 0.2, 1);
-		camera3.viewport = new Viewport(0.2, 0, 0.8, 0.1);
 
 		this.scene.activeCameras?.push(camera);
 		this.scene.activeCameras?.push(camera2);
-		this.scene.activeCameras?.push(camera3);
-		camera3.layerMask = 0x10000000;
+		camera.layerMask = 0xffffff0f;
 
 		// this.subScene.activeCamera = camera2;
 
@@ -197,7 +186,6 @@ class App {
 				this.board.resetPossiblePathMaterial();
 				this.board.drawHabitat(this.srcTile, hitTile.pickedMesh.name);
 			} else {
-				console.log(!!hitTile?.hit, !!hitTile?.pickedMesh, !!this.srcTile, !!!this.destTile);
 			}
 		};
 	}
