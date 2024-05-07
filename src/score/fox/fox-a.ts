@@ -17,8 +17,8 @@ export class FoxScoringA {
 			const neighborhood = mapItem.neighborhood;
 			const uniqueWildLife: Set<WildLife> = new Set();
 			for (const neighbor of neighborhood) {
-				const neighborItem = mapData.get(neighbor)!;
-				if (neighborItem.placedToken) uniqueWildLife.add(neighborItem.placedToken);
+				const neighborItem = mapData.get(neighbor);
+				if (neighborItem?.placedToken) uniqueWildLife.add(neighborItem.placedToken);
 			}
 			if (uniqueWildLife.size > 0) {
 				this.totalScore += this.FoxScoringValue[uniqueWildLife.size];

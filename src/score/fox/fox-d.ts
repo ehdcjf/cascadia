@@ -113,7 +113,7 @@ export class FoxScoringD {
 		}, new Set<string>());
 
 		const pairsOfWildlife = [...neighborhood]
-			.map((key) => this.mapData.get(key)!.placedToken)
+			.map((key) => this.mapData.get(key)?.placedToken)
 			.filter((tile) => !!tile && tile != 'fox')
 			.reduce((r, v, _, a) => {
 				if (!r.has(v)) return r;

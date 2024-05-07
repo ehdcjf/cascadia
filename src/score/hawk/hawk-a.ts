@@ -23,7 +23,7 @@ export class HawkScoringA implements IHawkScoring {
 			const neighborhood = tile.neighborhood;
 			let isIsolated = true;
 			for (const neighbor of neighborhood) {
-				const token = mapData.get(neighbor)!.placedToken;
+				const token = mapData.get(neighbor)?.placedToken ?? null;
 				if (token == 'hawk') {
 					isIsolated = false;
 					break;

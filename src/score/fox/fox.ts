@@ -28,7 +28,7 @@ export abstract class FoxScoring {
 			visited.add(firstFox);
 			while (q.size > 0) {
 				const fox = q.pop()!;
-				const neighborhood = this.mapData.get(fox)!.neighborhood;
+				const neighborhood = this.mapData.get(fox)?.neighborhood ?? [];
 				for (const neighbor of neighborhood) {
 					if (!foxGroup.includes(neighbor)) continue;
 					if (visited.has(neighbor)) continue;

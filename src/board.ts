@@ -1,4 +1,4 @@
-import { AbstractMesh, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import { AbstractMesh, Color3, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
 import { startingTiles } from './data';
 import { Habitat, Tile, TileInfo, WildLife } from './interfaces';
 import { TileScoring } from './score/tile';
@@ -31,7 +31,10 @@ export class Board {
 				const s = -q - r;
 				const tileID = this.tileIDFromQRS(q, r, s);
 				const tileMesh = this.scene.getMeshById('beige')!.clone(tileID, this.tfNode)!;
+				tileMesh.id = 'blank';
 				tileMesh.position = this.tileVectorFromQRS(q, r);
+				tileMesh.overlayColor = Color3.Yellow();
+				tileMesh.overlayAlpha = 0.3;
 				// tileMesh.visibility = 1;
 				// tileMesh.renderOutline = true;
 				// tileMesh.outlineColor = new Color3(0, 0, 0);
@@ -57,15 +60,43 @@ export class Board {
 		});
 	}
 
+	// showPossiblePathRay() {
+	// 	this.scene
+	// 		.getMeshesById('blank')
+	// 		.filter((v) => v.visibility == 1)
+	// 		.forEach((mesh) => {
+	// 			mesh.renderOverlay = true;
+	// 		});
+	// }
+
+	// hidePossiblePathRay() {
+	// 	this.scene
+	// 		.getMeshesById('blank')
+	// 		.filter((v) => v.visibility == 1)
+	// 		.forEach((mesh) => {
+	// 			mesh.renderOverlay = false;
+	// 		});
+	// }
+
+	resetPossiblePathMaterial() {
+		const blankMat = this.scene.getMeshById('beige')!.material;
+		this.scene
+			.getMeshesById('blank')
+			.filter((v) => v.visibility == 1)
+			.forEach((mesh) => {
+				mesh.getChildren().forEach((chMesh) => chMesh.dispose());
+				mesh.material = blankMat;
+			});
+	}
+
 	drawHabitat(tileInfo: TileInfo, tileID: string, rotation = 0) {
 		// UI
 		const targetTileMesh = this.scene.getMeshByName(tileID)!;
-		targetTileMesh.metadata = {
-			wildLife: tileInfo.wildlife,
-		};
+
 		targetTileMesh.visibility = 1;
 
 		const habitatName = tileInfo.habitats.join('-');
+
 		const newMaterial = this.scene.getMeshById(habitatName)!.material!;
 		targetTileMesh.material = newMaterial;
 		targetTileMesh.rotation = new Vector3(0, Tools.ToRadians(rotation), 0);
@@ -129,9 +160,15 @@ export class Board {
 	}
 
 	private setTile(tileInfo: TileInfo, tileID: string, rotation: number) {
+		const mesh = this.scene.getMeshByName(tileID)!;
+		mesh.id = tileInfo.habitats.join('-');
+		mesh.metadata = {
+			wildLife: tileInfo.wildlife,
+		};
 		const tile: Tile = {
 			tileNum: this.mapData.size + 1,
 			placedToken: null,
+			habaitats: tileInfo.habitats,
 			habitatSides: this.getHabitatSides(tileInfo.habitats, rotation),
 			neighborhood: this.getNeighborTileIDs(tileID),
 			qrs: this.qrsFromTileID(tileID),

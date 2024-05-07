@@ -1,48 +1,3 @@
-# A 곰
-
-# A 엘크
-
-# A 연어
-
-# A 매
-
-# A 여우
-
-# B 곰
-
-# B 엘크 테스트 꼭 해야함.
-
-B 연어
-
-# B 매
-
-# B 여우
-
-# C 곰
-
-# C 엘크
-
-C 연어
-C 매
-
-# C 여우
-
-# D 곰
-
-# D 엘크 테스트 꼭 해야함.
-
-D 연어
-D 매
-D 여우
-
-# E 곰
-
-E 엘크
-E 연어
-E 매
-E 여우
-
-==================================================================================
 0503
 mapData에서 타일종류, 타일 회전 ,타일 위치 같은 경우에는 바뀔 일이 없고
 바뀔 수 있는 거는 야생동물,
@@ -59,5 +14,22 @@ tileID에서 qrs 취하는 함수를 만들지.. 아니면 mapData에 qrs 까지
 
 0506
 ABCD 그룹이 아니라 각 동물마다 나눠야 관리가 쉬울듯
+
+
+
+0507
+1.  pointer down : select tile
+2.  overlay  possiblePath  (yellow)
+3.  pointer move:  paint possiblePath  selectedTile
+4.  pointer down:  show button [cancle] [confirm] [rotateCW]  [rotateCCW]
+5.  button actions
+	cancle: delete possiblePath overlay=> possiblePath initialize material; all idleToken visibility 
+
+
+
+
+
+
+
 
 

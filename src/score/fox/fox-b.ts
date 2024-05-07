@@ -16,8 +16,8 @@ export class FoxScoringB {
 			const neighborhood = mapItem.neighborhood;
 
 			const pairsOfWildlife = neighborhood
-				.map((key) => mapData.get(key)!.placedToken)
-				.filter((tile) => tile && tile != 'fox')
+				.map((key) => mapData.get(key)?.placedToken)
+				.filter((tile) => !!tile && tile != 'fox')
 				.reduce((r, v, _, a) => {
 					if (r.has(v)) return r;
 

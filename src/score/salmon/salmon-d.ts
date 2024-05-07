@@ -18,14 +18,14 @@ export class SalmonScoringD extends SalmonScoring {
 
 	protected calculateNeighborhoodScore(salmonGroup: string[]) {
 		const neighborhood = salmonGroup.reduce((r, salmon, _, a) => {
-			const neighborhood = this.mapData.get(salmon)!.neighborhood;
+			const neighborhood = this.mapData.get(salmon)?.neighborhood ?? [];
 			return r.concat(
 				neighborhood.filter((neighbor) => !r.includes(neighbor) && !a.includes(neighbor))
 			);
 		}, [] as string[]);
 
 		return neighborhood.filter((neighbor) => {
-			const token = this.mapData.get(neighbor)!.placedToken;
+			const token = this.mapData.get(neighbor)?.placedToken ?? null;
 			if (token == 'salmon' || !token) return false;
 			return true;
 		}).length;

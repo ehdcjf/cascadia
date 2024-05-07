@@ -19,10 +19,15 @@ import {
 	AssetsManager,
 	Viewport,
 	Color4,
+	Matrix,
 } from '@babylonjs/core';
+import * as GUI from '@babylonjs/gui';
 
 import * as BABYLON from '@babylonjs/core';
 import { Board } from './board';
+import { Pocket } from './pocket';
+import { TileInfo } from './interfaces';
+import { TileActions } from './tileActions';
 (window as any).BABYLON = BABYLON;
 
 const H = 1.5;
@@ -32,6 +37,9 @@ class App {
 	private scene!: Scene;
 	private engine!: Engine;
 	private board!: Board;
+	private pocket!: Pocket;
+	private srcTile: TileInfo | null = null;
+	private destTile: string | null = null;
 	subScene!: Scene;
 
 	constructor() {
@@ -44,6 +52,9 @@ class App {
 
 		await this.createScene();
 		this.board = new Board(this.scene);
+		this.pocket = new Pocket(this.scene);
+		this.setPointerDownEvent();
+		this.setPointerMoveEvent();
 		this.engine.runRenderLoop(() => {
 			if (this.scene) this.scene.render();
 		});
@@ -76,12 +87,25 @@ class App {
 			this.scene
 		);
 
+		const camera3 = new ArcRotateCamera(
+			'camera3',
+			Tools.ToRadians(0),
+			Tools.ToRadians(90),
+			10,
+			Vector3.Zero(),
+			this.scene
+		);
+
 		camera.attachControl(true);
-		camera.viewport = new Viewport(0.3, 0, 0.7, 1);
-		camera2.viewport = new Viewport(0, 0, 0.3, 1);
+		camera.viewport = new Viewport(0.2, 0.1, 0.8, 0.9);
+		camera2.viewport = new Viewport(0, 0, 0.2, 1);
+		camera3.viewport = new Viewport(0.2, 0, 0.8, 0.1);
 
 		this.scene.activeCameras?.push(camera);
 		this.scene.activeCameras?.push(camera2);
+		this.scene.activeCameras?.push(camera3);
+		camera3.layerMask = 0x10000000;
+
 		// this.subScene.activeCamera = camera2;
 
 		const light = new HemisphericLight('light', new Vector3(0, 1, 0), this.scene);
@@ -99,6 +123,83 @@ class App {
 		assets.meshes.forEach((mesh, i) => {
 			mesh.visibility = 0;
 		});
+	}
+
+	private setPointerDownEvent() {
+		this.scene.onPointerDown = (evt, pickInfo) => {
+			const ray = this.scene.createPickingRay(
+				this.scene.pointerX,
+				this.scene.pointerY,
+				Matrix.Identity(),
+				this.scene.getCameraById('camera2')
+			);
+
+			const boardRay = this.scene.createPickingRay(
+				this.scene.pointerX,
+				this.scene.pointerY,
+				Matrix.Identity(),
+				this.scene.getCameraById('camera')
+			);
+
+			const hitToken = this.scene.pickWithRay(ray, (mesh) => {
+				return mesh && mesh?.metadata?.type == 'token';
+			});
+
+			const hitTile = this.scene.pickWithRay(ray, (mesh) => {
+				return mesh && mesh?.metadata?.type == 'tile';
+			});
+
+			const hitBlank = this.scene.pickWithRay(boardRay, (mesh) => {
+				return mesh && mesh.id == 'blank' && mesh.visibility == 1;
+			});
+
+			if (hitToken?.hit && hitToken.pickedMesh) {
+				const pickedMesh = hitToken.pickedMesh;
+				pickedMesh.visibility = 1;
+			}
+
+			if (hitTile?.hit && hitTile.pickedMesh) {
+				this.board.resetPossiblePathMaterial();
+				const tiles = this.scene.getMeshesById('readyTile');
+				tiles.forEach((tile) => {
+					tile.renderOverlay = true;
+				});
+				hitTile.pickedMesh.renderOverlay = false;
+				this.srcTile = hitTile.pickedMesh?.metadata.tileInfo;
+				// this.board.showPossiblePathRay();
+			}
+
+			if (hitBlank?.hit && hitBlank.pickedMesh && this.srcTile) {
+				this.board.resetPossiblePathMaterial();
+				this.destTile = hitBlank.pickedMesh.name;
+				this.board.drawHabitat(this.srcTile, this.destTile, 0);
+				new TileActions(this.scene, this.srcTile, this.destTile);
+			}
+		};
+	}
+
+	private setPointerMoveEvent() {
+		this.scene.onPointerMove = (evt, pickInfo) => {
+			const ray = this.scene.createPickingRay(
+				this.scene.pointerX,
+				this.scene.pointerY,
+				Matrix.Identity(),
+				this.scene.getCameraById('camera')
+			);
+
+			const hitTile = this.scene.pickWithRay(ray, (mesh) => {
+				return mesh && mesh.id == 'blank' && mesh.visibility == 1;
+			});
+
+			if (!hitTile?.hit && !this.destTile) {
+				this.board.resetPossiblePathMaterial();
+			} else if (hitTile?.hit && hitTile.pickedMesh && this.srcTile && this.destTile == null) {
+				this.board.resetPossiblePathMaterial();
+				this.board.drawHabitat(this.srcTile, hitTile.pickedMesh.name);
+			} else {
+				console.log(!!hitTile?.hit, !!hitTile?.pickedMesh, !!this.srcTile, !!!this.destTile);
+			}
+		};
 	}
 }
 

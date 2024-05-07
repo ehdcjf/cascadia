@@ -72,9 +72,9 @@ export class ElkScoringD extends ElkScoring {
 		const q = new Queue<[string[], number]>();
 
 		elkGroup.forEach((elkKey) => {
-			const neighborKeys = this.mapData.get(elkKey)!.neighborhood;
+			const neighborhood = this.mapData.get(elkKey)!.neighborhood;
 
-			neighborKeys.forEach((neighborKey, lastDir) => {
+			neighborhood.forEach((neighborKey, lastDir) => {
 				if (elkGroup.includes(neighborKey)) {
 					const elks = [elkKey, neighborKey];
 					q.push([elks, lastDir]);

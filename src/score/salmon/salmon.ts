@@ -21,7 +21,7 @@ export abstract class SalmonScoring {
 			if (tile.placedToken != 'salmon') continue;
 
 			const neighborSalmonsSize = tile.neighborhood
-				.map((neighbor) => this.mapData.get(neighbor)?.placedToken)
+				.map((neighbor) => this.mapData.get(neighbor)?.placedToken ?? null)
 				.filter((v) => v == 'salmon').length;
 			if (neighborSalmonsSize >= 3) continue;
 			validSalmons.push(salmon);

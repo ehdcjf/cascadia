@@ -79,7 +79,7 @@ export class HawkScoringD implements IHawkScoring {
 				hawkClone.q += 1;
 				hawkClone.r -= 1;
 				const tileID = `tile[${hawkClone.q}][${hawkClone.r}][${hawkClone.s}]`;
-				const token = this.mapData.get(tileID)!.placedToken;
+				const token = this.mapData.get(tileID)?.placedToken ?? null;
 				if (token == 'hawk') return 0;
 				else if (token) {
 					uniqueWildLifeTypes.add(token);
@@ -91,7 +91,7 @@ export class HawkScoringD implements IHawkScoring {
 				hawkClone.q += 1;
 				hawkClone.s -= 1;
 				const tileID = `tile[${hawkClone.q}][${hawkClone.r}][${hawkClone.s}]`;
-				const token = this.mapData.get(tileID)!.placedToken;
+				const token = this.mapData.get(tileID)?.placedToken ?? null;
 				if (token == 'hawk') return 0;
 				else if (token) {
 					uniqueWildLifeTypes.add(token);
@@ -103,7 +103,7 @@ export class HawkScoringD implements IHawkScoring {
 				hawkClone.r += 1;
 				hawkClone.s -= 1;
 				const tileID = `tile[${hawkClone.q}][${hawkClone.r}][${hawkClone.s}]`;
-				const token = this.mapData.get(tileID)!.placedToken;
+				const token = this.mapData.get(tileID)?.placedToken ?? null;
 				if (token == 'hawk') return 0;
 				else if (token) {
 					uniqueWildLifeTypes.add(token);

@@ -80,13 +80,13 @@ export class TileScoring {
 			const matchedHabitats = habaitat.tilesWithMatchedHabitats;
 
 			for (const [tileNum] of matchedHabitats) {
-				const q = new Queue();
+				const q = new Queue<number>();
 				const visitedHabitats: Set<number> = new Set();
 				q.push(tileNum);
 				visitedHabitats.add(tileNum);
 
 				while (q.size > 0) {
-					const now = q.pop();
+					const now = q.pop()!;
 					if (matchedHabitats.has(now)) {
 						const links = matchedHabitats.get(now)!;
 						for (const nextTile of links) {

@@ -28,7 +28,7 @@ export abstract class ElkScoring {
 			visited.add(firstElk);
 			while (q.size > 0) {
 				const token = q.pop()!;
-				const neighborhood = this.mapData.get(token)!.neighborhood;
+				const neighborhood = this.mapData.get(token)?.neighborhood ?? [];
 				for (const neighbor of neighborhood) {
 					if (!elkGroup.includes(neighbor)) continue;
 					if (visited.has(neighbor)) continue;

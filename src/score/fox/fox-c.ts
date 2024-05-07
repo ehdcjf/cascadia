@@ -17,7 +17,7 @@ export class FoxScoringC {
 			const neighborhood = mapItem.neighborhood;
 
 			const mostAbundantCount = neighborhood
-				.map((key) => mapData.get(key)!.placedToken)
+				.map((key) => mapData.get(key)?.placedToken)
 				.filter((tile) => !!tile && tile != 'fox')
 				.reduce((r, v, _, a) => {
 					const wildlifeCount = a.filter((w) => w == v).length;
