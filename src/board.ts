@@ -1,4 +1,4 @@
-import { AbstractMesh, Color3, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import { AbstractMesh, Color3, MeshBuilder, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
 import { startingTiles } from './data';
 import { Habitat, Tile, TileInfo, WildLife } from './interfaces';
 import { TileScoring } from './score/tile';
@@ -30,7 +30,7 @@ export class Board {
 			for (let r = r1; r <= r2; r++) {
 				const s = -q - r;
 				const tileID = this.tileIDFromQRS(q, r, s);
-				const tileMesh = this.scene.getMeshById('beige')!.clone(tileID, this.tfNode)!;
+				const tileMesh = this.scene.getMeshById('blank')!.clone(tileID, this.tfNode)!;
 				tileMesh.id = 'blank';
 				tileMesh.position = this.tileVectorFromQRS(q, r);
 				tileMesh.overlayColor = Color3.Yellow();
@@ -79,7 +79,7 @@ export class Board {
 	// }
 
 	resetPossiblePathMaterial() {
-		const blankMat = this.scene.getMeshById('beige')!.material;
+		const blankMat = this.scene.getMeshById('blank')!.material;
 		this.scene
 			.getMeshesById('blank')
 			.filter((v) => v.visibility == 1)

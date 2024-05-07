@@ -27,7 +27,7 @@ import * as BABYLON from '@babylonjs/core';
 import { Board } from './board';
 import { Pocket } from './pocket';
 import { TileInfo } from './interfaces';
-import { TileActions } from './tileActions';
+import { TileActions } from './tileAction';
 (window as any).BABYLON = BABYLON;
 
 const H = 1.5;
@@ -41,6 +41,7 @@ class App {
 	private srcTile: TileInfo | null = null;
 	private destTile: string | null = null;
 	subScene!: Scene;
+	tilaAction!: TileActions;
 
 	constructor() {
 		this.init();
@@ -53,6 +54,7 @@ class App {
 		await this.createScene();
 		this.board = new Board(this.scene);
 		this.pocket = new Pocket(this.scene);
+		this.tilaAction = new TileActions(this.scene);
 		this.setPointerDownEvent();
 		this.setPointerMoveEvent();
 		this.engine.runRenderLoop(() => {
@@ -93,6 +95,7 @@ class App {
 
 		this.scene.activeCameras?.push(camera);
 		this.scene.activeCameras?.push(camera2);
+		this.scene.cameraToUseForPointers = camera;
 		camera.layerMask = 0xffffff0f;
 
 		// this.subScene.activeCamera = camera2;
@@ -101,7 +104,7 @@ class App {
 		light.intensity = 0.3;
 		const light2 = new HemisphericLight('light2', new Vector3(0, 1, 0), this.subScene);
 
-		Inspector.Show(this.scene, {});
+		// Inspector.Show(this.scene, {});
 		await this.loadAssetAsync();
 		await this.scene.whenReadyAsync();
 		this.engine.hideLoadingUI();
@@ -111,6 +114,7 @@ class App {
 		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia.glb', this.scene);
 		assets.meshes.forEach((mesh, i) => {
 			mesh.visibility = 0;
+			console.log(mesh.id);
 		});
 	}
 
@@ -162,7 +166,6 @@ class App {
 				this.board.resetPossiblePathMaterial();
 				this.destTile = hitBlank.pickedMesh.name;
 				this.board.drawHabitat(this.srcTile, this.destTile, 0);
-				new TileActions(this.scene, this.srcTile, this.destTile);
 			}
 		};
 	}
