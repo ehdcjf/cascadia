@@ -1,44 +1,53 @@
-import { Color3, Matrix, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import {
+	Color3,
+	Matrix,
+	Scene,
+	Tags,
+	Tools,
+	TransformNode,
+	Vector3,
+	Animation,
+	GlowLayer,
+	Mesh,
+	HighlightLayer,
+	AbstractMesh,
+} from '@babylonjs/core';
 import { TileInfo, WildLife } from './interfaces';
 import { tiles } from './data';
+import { setVisibility, sleep } from './utils';
+const positionY = [-3, -1, 1, 3, 5];
 export class Pocket {
-	tokens: WildLife[] = [];
-	tiles: TileInfo[] = [];
-	tfNode: TransformNode;
-	nowTokens: WildLife[] = [];
-	nowTiles: TileInfo[] = [];
+	allTokens: WildLife[] = [];
+	allTiles: TileInfo[] = [];
+	anchor: TransformNode;
+	tokens: (WildLife | null)[] = [];
+	tiles: (TileInfo | null)[] = [];
+	hl: HighlightLayer;
 
 	constructor(protected scene: Scene) {
-		this.tfNode = new TransformNode('pocket-tf', this.scene);
-		this.tfNode.position = new Vector3(100, 100, 100);
+		this.anchor = new TransformNode('pocket-anchor', this.scene);
+		this.anchor.position = new Vector3(100, 100, 100);
+		this.hl = new HighlightLayer('hl1', scene);
+
 		this.setupTiles();
 		this.setupTokens();
+		this.refillTokens();
 		for (let i = 0; i < 4; i++) {
-			this.nowTokens.push(this.tokens.pop()!);
-			this.nowTiles.push(this.tiles.pop()!);
+			this.tiles.push(this.allTiles.pop()!);
 		}
-		this.nowTokens.forEach((wildlife, i) => {
-			const tokenOrigin = this.scene.getMeshById(`${wildlife}-token`)!;
-			const token = tokenOrigin.clone('token' + i, this.tfNode)!;
-			token.visibility = 1;
-			token.position.y += (i - 1.5) * 2;
-			token.position.x -= 1;
-			token.metadata = { type: 'token', wildlife: wildlife, line: i };
-			token.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
-			token.scaling = new Vector3(0.6, 0.6, 0.6);
-		});
 
-		this.nowTiles.forEach((tileInfo, i) => {
-			const habitatName = tileInfo.habitats.join('-');
-
-			const tileMesh = this.scene.getMeshById(habitatName)!.clone(`nowtile${i}`, this.tfNode)!;
-			tileMesh.id = 'readyTile';
+		this.tiles.forEach((tileInfo, i) => {
+			const habitatName = tileInfo!.habitats.join('-');
+			const tileMesh = this.scene.getMeshById(habitatName)!.clone(`tile${i}`, this.anchor)!;
+			Tags.EnableFor(tileMesh);
+			Tags.AddTagsTo(tileMesh, `tile tile${i}`);
+			tileMesh.id = 'tile';
 			tileMesh.visibility = 1;
 			tileMesh.position.y += (i - 1.5) * 2;
 			tileMesh.position.x += 0.5;
-			tileMesh.metadata = { type: 'tile', tileInfo: tileInfo, line: i };
+			tileMesh.metadata = tileInfo;
 
-			tileMesh.rotation = new Vector3(Tools.ToRadians(90), Tools.ToRadians(tileInfo.rotation), 0);
+			tileMesh.rotation = new Vector3(Tools.ToRadians(90), Tools.ToRadians(tileInfo!.rotation), 0);
 			tileMesh.scaling = new Vector3(0.7, 0.7, 0.7);
 			tileMesh.renderOutline = true;
 			tileMesh.outlineColor = new Color3(0, 0, 0);
@@ -47,18 +56,22 @@ export class Pocket {
 			tileMesh.overlayColor = Color3.Gray();
 			tileMesh.overlayAlpha = 0.5;
 
-			const tfNode = new TransformNode(`nowtile${i}-tf`, this.scene);
-			const wildlife = tileInfo.wildlife.map((anim) => {
+			const wildlifeAnchor = new TransformNode(`tile${i}-anchor`, this.scene);
+			const wildlife = tileInfo!.wildlife.map((anim) => {
 				const meshName = anim + '-plane';
-				const planeMash = this.scene.getMeshById(meshName)!.clone(`wildlife`, tfNode)!;
+				const planeMash = this.scene.getMeshById(meshName)!.clone(`wildlife`, wildlifeAnchor)!;
+				Tags.EnableFor(planeMash);
+				Tags.AddTagsTo(planeMash, `tile tile${i} wildlife`);
+				planeMash.overlayColor = Color3.Gray();
+				planeMash.overlayAlpha = 0.5;
 				planeMash.position.y += 0.11;
 				// planeMash.rotation = new Vector3(0, -Tools.ToRadians(thisStartingTile.rotation), 0);
 				planeMash.visibility = 1;
 				return planeMash;
 			});
 
-			tfNode.parent = tileMesh;
-			tfNode.rotation = new Vector3(0, -Tools.ToRadians(tileInfo.rotation), 0);
+			wildlifeAnchor.parent = tileMesh;
+			wildlifeAnchor.rotation = new Vector3(0, -Tools.ToRadians(tileInfo!.rotation), 0);
 
 			if (wildlife.length == 2) {
 				wildlife[0].position.x += 0.12;
@@ -72,6 +85,37 @@ export class Pocket {
 				wildlife[2].position.x += 0.2 * Math.cos(Math.PI / 6);
 				wildlife[2].position.z += 0.1;
 			}
+		});
+	}
+
+	protected pushTile() {}
+
+	protected pushToken() {}
+
+	async createAndStartAnimationAsync(
+		name: string,
+		target: any,
+		targetProperty: string,
+		framePerSecond: number,
+		totalFrame: number,
+		from: any,
+		to: any
+	) {
+		return new Promise<void>((resolve) => {
+			Animation.CreateAndStartAnimation(
+				name,
+				target,
+				targetProperty,
+				framePerSecond,
+				totalFrame,
+				from,
+				to,
+				Animation.ANIMATIONLOOPMODE_CONSTANT,
+				undefined,
+				() => {
+					resolve();
+				}
+			);
 		});
 	}
 
@@ -89,11 +133,11 @@ export class Pocket {
 				tokens.push(tokenName as WildLife);
 			}
 		}
-		this.tokens = this.suffle(tokens);
+		this.allTokens = this.suffle(tokens);
 	}
 
 	protected setupTiles() {
-		this.tiles = this.suffle(tiles);
+		this.allTiles = this.suffle(tiles);
 	}
 
 	protected suffle<T>(originArray: Array<T>): Array<T> {
@@ -107,10 +151,180 @@ export class Pocket {
 		return array;
 	}
 
-	public getToken(index: number) {
-		return this.nowTokens[index];
+	public highlight(mesh: AbstractMesh) {
+		this.lowlight();
+		[mesh,...mesh.getChildMeshes()].forEach(v=>{
+			this.hl.addMesh(v as Mesh, Color3.Green());
+		})		
 	}
-	public getTile(index: number) {
-		return this.nowTiles[index];
+
+
+	public lowlight() {
+		this.hl.removeAllMeshes();
+	}
+
+	public async deleteToken(index: number, dir: 'right' | 'left') {
+		this.tokens[index] = null;
+		const token = this.scene.getMeshByName('token' + index)!;
+		const end = dir == 'left' ? 2 : -2;
+		await this.createAndStartAnimationAsync('tokenSlide', token, 'position.x', 60, 50, -1, end);
+		token.dispose();
+	}
+
+	public async deleteTile(index: number, dir: 'right' | 'left') {
+		this.tiles[index] = null;
+		const tile = this.scene.getMeshByName('tile' + index)!;
+		const end = dir == 'left' ? 2 : -2;
+		await this.createAndStartAnimationAsync('tileSlide', tile, 'position.x', 60, 40, 0.5, end);
+		tile.dispose();
+	}
+
+	public async discardFurthest() {
+		const tileIndex = this.tiles.findIndex((tile) => tile != null);
+		const tokenIndex = this.tokens.findIndex((token) => token != null);
+		await Promise.all([this.deleteTile(tileIndex, 'left'), this.deleteToken(tokenIndex, 'left')]);
+		await sleep(400);
+		this.refillTokens();
+		// await Promise.all([this.refillTiles(), this.refillTokens()]);
+	}
+
+	private refillTokens() {
+		const aliveTokens = this.scene.getMeshesById('token');
+		const tiles = aliveTokens.sort((a, b) => this.tokenNumFromName(a.name) - this.tokenNumFromName(b.name));
+		while (tiles.length < 4) {
+			tiles.push(this.popToken());
+		}
+		tiles.forEach(async (token, dest) => {
+			const src = this.tokenNumFromName(token.name);
+			const startY = positionY[src];
+			const endY = positionY[dest];
+			await this.createAndStartAnimationAsync('yslide', token, 'position.y', 60, 50, startY, endY);
+			token.name = 'token' + dest;
+		});
+
+		// const this.tokens
+		// 	.reduce((r, v, index) => {
+		// 		if (v != null) r.push(index);
+		// 		return r;
+		// 	}, [] as number[])
+
+		// 	.forEach(async (start, end) => {
+		// 		const token = this.scene.getMeshByName('token' + start)!;
+		// 		const startY = positionY[start];
+		// 		const endY = positionY[end];
+		// 		await this.createAndStartAnimationAsync(
+		// 			'yslide',
+		// 			token,
+		// 			'position.y',
+		// 			60,
+		// 			50,
+		// 			startY,
+		// 			endY
+		// 		);
+		// 		this.tokens[end] = this.tokens[start];
+		// 		this.tokens[start] = null;
+		// 		token.name = 'token' + end;
+		// 		token.metadata = { ...token.metadata, line: end };
+		// 	});
+	}
+
+	private popToken() {
+		const wildlife = this.allTokens.pop()!;
+		const tokenOrigin = this.scene.getMeshById(`${wildlife}-token`)!;
+		const token = tokenOrigin.clone('token4', this.anchor)!;
+		token.id = 'token';
+		token.visibility = 1;
+		token.position.y += (4 - 1.5) * 2;
+		token.position.x -= 1;
+		token.metadata = wildlife;
+		token.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
+		token.scaling = new Vector3(0.6, 0.6, 0.6);
+		return token;
+	}
+
+	// private popTile() {
+	// 	const tileInfo = this.allTiles.pop()!;
+	// 	const habitatName = tileInfo!.habitats.join('-');
+	// 	const tileMesh = this.scene.getMeshById(habitatName)!.clone(`tile${i}`, this.anchor)!;
+	// 	Tags.EnableFor(tileMesh);
+	// 	Tags.AddTagsTo(tileMesh, `tile tile${i}`);
+	// 	tileMesh.id = 'tile';
+	// 	tileMesh.visibility = 1;
+	// 	tileMesh.position.y += (i - 1.5) * 2;
+	// 	tileMesh.position.x += 0.5;
+	// 	tileMesh.metadata = tileInfo;
+
+	// 	tileMesh.rotation = new Vector3(Tools.ToRadians(90), Tools.ToRadians(tileInfo!.rotation), 0);
+	// 	tileMesh.scaling = new Vector3(0.7, 0.7, 0.7);
+	// 	tileMesh.renderOutline = true;
+	// 	tileMesh.outlineColor = new Color3(0, 0, 0);
+	// 	tileMesh.outlineWidth = 0;
+	// 	tileMesh.renderOverlay = true;
+	// 	tileMesh.overlayColor = Color3.Gray();
+	// 	tileMesh.overlayAlpha = 0.5;
+
+	// 	const wildlifeAnchor = new TransformNode(`tile${i}-anchor`, this.scene);
+	// 	const wildlife = tileInfo!.wildlife.map((anim) => {
+	// 		const meshName = anim + '-plane';
+	// 		const planeMash = this.scene.getMeshById(meshName)!.clone(`wildlife`, wildlifeAnchor)!;
+	// 		Tags.EnableFor(planeMash);
+	// 		Tags.AddTagsTo(planeMash, `tile tile${i} wildlife`);
+	// 		planeMash.overlayColor = Color3.Gray();
+	// 		planeMash.overlayAlpha = 0.5;
+	// 		planeMash.position.y += 0.11;
+	// 		// planeMash.rotation = new Vector3(0, -Tools.ToRadians(thisStartingTile.rotation), 0);
+	// 		planeMash.visibility = 1;
+	// 		return planeMash;
+	// 	});
+
+	// 	wildlifeAnchor.parent = tileMesh;
+	// 	wildlifeAnchor.rotation = new Vector3(0, -Tools.ToRadians(tileInfo!.rotation), 0);
+
+	// 	if (wildlife.length == 2) {
+	// 		wildlife[0].position.x += 0.12;
+	// 		wildlife[0].position.z += 0.12;
+	// 		wildlife[1].position.x -= 0.12;
+	// 		wildlife[1].position.z -= 0.12;
+	// 	} else if (wildlife.length == 3) {
+	// 		wildlife[0].position.z -= 0.2;
+	// 		wildlife[1].position.z += 0.1;
+	// 		wildlife[1].position.x -= 0.2 * Math.cos(Math.PI / 6);
+	// 		wildlife[2].position.x += 0.2 * Math.cos(Math.PI / 6);
+	// 		wildlife[2].position.z += 0.1;
+	// 	}
+	// }
+
+	// public refillTiles() {
+	// 	// 이미 있는 토큰 아래로 당기기
+	// 	const shouldPull = this.tiles.reduce((r, v, index) => {
+	// 		if (v != null) r.push(index);
+	// 		return r;
+	// 	}, [] as number[]);
+
+	// 	while(shouldPull.length<4){
+	// 		shouldPull.push(4)
+	// 	}
+
+	// 	const shouldPullPromise = shouldPull.map(async(start, end) => {
+	// 		const tile = this.scene.getMeshByName('tile' + start)?? this.;
+	// 		const tileInfo = this.tiles[start]??;
+	// 		tile.name = 'tile' + end;
+	// 		const startY = positionY[start];
+	// 		const endY = positionY[end];
+	// 		await this.createAndStartAnimationAsync('yslide', tile, 'position.y', 60, 50, startY, endY);
+	// 		this.tiles[end] = tileInfo;
+
+	// 	});
+	// }
+
+	public tileNumFromName(tags: string) {
+		const regex = /tile(\d+)/;
+		const match = tags.match(regex)!;
+		return +match[1];
+	}
+	public tokenNumFromName(tags: string) {
+		const regex = /token(\d+)/;
+		const match = tags.match(regex)!;
+		return +match[1];
 	}
 }

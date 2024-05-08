@@ -17,3 +17,4 @@ export type GroupResult = {
 	score: number;
 	groups: string[][];
 };
+

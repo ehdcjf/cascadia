@@ -1,3 +1,4 @@
+import { AbstractMesh } from '@babylonjs/core';
 import { QRS } from './interfaces';
 
 export class Item<T> {
@@ -46,4 +47,19 @@ export function qrsFromTileID(tileID: string) {
 	} else {
 		throw new Error('Tlqkf');
 	}
+}
+
+export function setVisibility(mesh: AbstractMesh, value: number) {
+	if (mesh.visibility) mesh.visibility = value;
+	mesh.getChildren().forEach((child) => {
+		setVisibility(child as AbstractMesh, value);
+	});
+}
+
+export async function sleep(ms: number) {
+	return new Promise<void>((resolve) => {
+		setTimeout(() => {
+			resolve();
+		}, ms);
+	});
 }

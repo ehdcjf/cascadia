@@ -1,4 +1,4 @@
-import { AbstractMesh, Color3, MeshBuilder, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import { AbstractMesh, Color3, Matrix, MeshBuilder, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
 import { startingTiles } from './data';
 import { Habitat, Tile, TileInfo, WildLife } from './interfaces';
 import { TileScoring } from './score/tile';
@@ -14,15 +14,15 @@ export class Board {
 	// protected mapData: MapData = new Map();
 	protected mapData: Map<string, Tile> = new Map();
 	protected possiblePath: Map<string, AbstractMesh> = new Map();
-	tfNode: TransformNode;
+	public readonly anchor: TransformNode;
 
 	constructor(protected scene: Scene) {
-		this.tfNode = new TransformNode('pocket-tf', this.scene);
+		this.anchor = new TransformNode('board-anchor', this.scene);
 		this.init();
 		const x = new TileScoring(this.mapData);
 	}
 
-	init() {
+	private init() {
 		const N = 20;
 		for (let q = -N; q <= N; q++) {
 			const r1 = Math.max(-N, -q - N);
@@ -30,7 +30,7 @@ export class Board {
 			for (let r = r1; r <= r2; r++) {
 				const s = -q - r;
 				const tileID = this.tileIDFromQRS(q, r, s);
-				const tileMesh = this.scene.getMeshById('blank')!.clone(tileID, this.tfNode)!;
+				const tileMesh = this.scene.getMeshById('beige')!.clone(tileID, this.anchor)!;
 				tileMesh.id = 'blank';
 				tileMesh.position = this.tileVectorFromQRS(q, r);
 				tileMesh.overlayColor = Color3.Yellow();
@@ -79,7 +79,7 @@ export class Board {
 	// }
 
 	resetPossiblePathMaterial() {
-		const blankMat = this.scene.getMeshById('blank')!.material;
+		const blankMat = this.scene.getMeshById('beige')!.material;
 		this.scene
 			.getMeshesById('blank')
 			.filter((v) => v.visibility == 1)
@@ -92,8 +92,7 @@ export class Board {
 	drawHabitat(tileInfo: TileInfo, tileID: string, rotation = 0) {
 		// UI
 		const targetTileMesh = this.scene.getMeshByName(tileID)!;
-
-		targetTileMesh.visibility = 1;
+		// targetTileMesh.visibility = 1;
 
 		const habitatName = tileInfo.habitats.join('-');
 
@@ -101,29 +100,32 @@ export class Board {
 		targetTileMesh.material = newMaterial;
 		targetTileMesh.rotation = new Vector3(0, Tools.ToRadians(rotation), 0);
 
-		const tfNode = new TransformNode(`transform`, this.scene);
-		const wildlifeMesh = tileInfo.wildlife.map((wildlife) => {
-			const meshID = wildlife + '-plane';
-			const planeMesh = this.scene.getMeshById(meshID)!.clone('wildlife', tfNode)!;
-			planeMesh.position.y += 0.11;
-			planeMesh.visibility = 1;
-			return planeMesh;
-		});
+		const anchor =
+			targetTileMesh.getChildTransformNodes()[0] ?? new TransformNode(`tile-anchor`, this.scene);
+		if (anchor.getChildMeshes().length == 0) {
+			const wildlifeMesh = tileInfo.wildlife.map((wildlife) => {
+				const meshID = wildlife + '-plane';
+				const planeMesh = this.scene.getMeshById(meshID)!.clone('wildlife', anchor)!;
+				planeMesh.position.y += 0.11;
+				planeMesh.visibility = 1;
+				return planeMesh;
+			});
 
-		if (wildlifeMesh.length == 2) {
-			wildlifeMesh[0].position.x -= 0.15;
-			wildlifeMesh[0].position.z += 0.15;
-			wildlifeMesh[1].position.x += 0.15;
-			wildlifeMesh[1].position.z -= 0.15;
-		} else if (wildlifeMesh.length == 3) {
-			wildlifeMesh[0].position.z -= 0.25;
-			wildlifeMesh[1].position.z += 0.125;
-			wildlifeMesh[1].position.x -= 0.25 * Math.cos(Math.PI / 6);
-			wildlifeMesh[2].position.x += 0.25 * Math.cos(Math.PI / 6);
-			wildlifeMesh[2].position.z += 0.125;
+			if (wildlifeMesh.length == 2) {
+				wildlifeMesh[0].position.x -= 0.15;
+				wildlifeMesh[0].position.z += 0.15;
+				wildlifeMesh[1].position.x += 0.15;
+				wildlifeMesh[1].position.z -= 0.15;
+			} else if (wildlifeMesh.length == 3) {
+				wildlifeMesh[0].position.z -= 0.25;
+				wildlifeMesh[1].position.z += 0.125;
+				wildlifeMesh[1].position.x -= 0.25 * Math.cos(Math.PI / 6);
+				wildlifeMesh[2].position.x += 0.25 * Math.cos(Math.PI / 6);
+				wildlifeMesh[2].position.z += 0.125;
+			}
+			anchor.parent = targetTileMesh;
 		}
-		tfNode.parent = targetTileMesh;
-		tfNode.rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
+		anchor.rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
 	}
 
 	drawPossiblePaths(tileID: string) {
@@ -159,12 +161,10 @@ export class Board {
 		return habitatSides;
 	}
 
-	private setTile(tileInfo: TileInfo, tileID: string, rotation: number) {
+	public setTile(tileInfo: TileInfo, tileID: string, rotation: number) {
 		const mesh = this.scene.getMeshByName(tileID)!;
-		mesh.id = tileInfo.habitats.join('-');
-		mesh.metadata = {
-			wildLife: tileInfo.wildlife,
-		};
+		mesh.id = 'habitat';
+		mesh.metadata = tileInfo.wildlife;
 		const tile: Tile = {
 			tileNum: this.mapData.size + 1,
 			placedToken: null,
@@ -176,7 +176,7 @@ export class Board {
 		this.mapData.set(tileID, tile);
 	}
 
-	private setToken(wildLife: WildLife, tileID: string) {
+	public setToken(wildLife: WildLife, tileID: string) {
 		const tile = this.mapData.get(tileID)!;
 		tile.placedToken = wildLife;
 		this.mapData.set(tileID, tile);
