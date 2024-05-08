@@ -90,6 +90,7 @@ export class ActionManager {
 
 		this.pocket.lowlight();
 		if (!this.useNature) {
+			console.log(this.tileLine);
 			this.selectedToken = this.getTokenFromLineNum(this.tileLine!);
 			this.pocket.highlight(this.selectedToken);
 			this.tokenLine = this.tileLine;
@@ -250,8 +251,8 @@ export class ActionManager {
 	}
 
 	private getTokenFromLineNum(line: number): AbstractMesh {
+		console.log(line);
 		const wildlife = this.scene.getMeshByName('token' + line)!.metadata;
-		console.log(wildlife);
 		const mesh = this.scene.getMeshByName(wildlife + '-token')!.clone(wildlife!, this.board.anchor)!;
 		mesh.metadata = wildlife;
 		return mesh;

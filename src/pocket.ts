@@ -32,60 +32,61 @@ export class Pocket {
 		this.setupTiles();
 		this.setupTokens();
 		this.refillTokens();
-		for (let i = 0; i < 4; i++) {
-			this.tiles.push(this.allTiles.pop()!);
-		}
+		this.refillTiles()
+		// for (let i = 0; i < 4; i++) {
+		// 	this.tiles.push(this.allTiles.pop()!);
+		// }
 
-		this.tiles.forEach((tileInfo, i) => {
-			const habitatName = tileInfo!.habitats.join('-');
-			const tileMesh = this.scene.getMeshById(habitatName)!.clone(`tile${i}`, this.anchor)!;
-			Tags.EnableFor(tileMesh);
-			Tags.AddTagsTo(tileMesh, `tile tile${i}`);
-			tileMesh.id = 'tile';
-			tileMesh.visibility = 1;
-			tileMesh.position.y += (i - 1.5) * 2;
-			tileMesh.position.x += 0.5;
-			tileMesh.metadata = tileInfo;
+		// this.tiles.forEach((tileInfo, i) => {
+		// 	const habitatName = tileInfo!.habitats.join('-');
+		// 	const tileMesh = this.scene.getMeshById(habitatName)!.clone(`tile${i}`, this.anchor)!;
+		// 	Tags.EnableFor(tileMesh);
+		// 	Tags.AddTagsTo(tileMesh, `tile tile${i}`);
+		// 	tileMesh.id = 'tile';
+		// 	tileMesh.visibility = 1;
+		// 	tileMesh.position.y += (i - 1.5) * 2;
+		// 	tileMesh.position.x += 0.5;
+		// 	tileMesh.metadata = tileInfo;
 
-			tileMesh.rotation = new Vector3(Tools.ToRadians(90), Tools.ToRadians(tileInfo!.rotation), 0);
-			tileMesh.scaling = new Vector3(0.7, 0.7, 0.7);
-			tileMesh.renderOutline = true;
-			tileMesh.outlineColor = new Color3(0, 0, 0);
-			tileMesh.outlineWidth = 0;
-			tileMesh.renderOverlay = true;
-			tileMesh.overlayColor = Color3.Gray();
-			tileMesh.overlayAlpha = 0.5;
+		// 	tileMesh.rotation = new Vector3(Tools.ToRadians(90), Tools.ToRadians(tileInfo!.rotation), 0);
+		// 	tileMesh.scaling = new Vector3(0.7, 0.7, 0.7);
+		// 	tileMesh.renderOutline = true;
+		// 	tileMesh.outlineColor = new Color3(0, 0, 0);
+		// 	tileMesh.outlineWidth = 0;
+		// 	tileMesh.renderOverlay = true;
+		// 	tileMesh.overlayColor = Color3.Gray();
+		// 	tileMesh.overlayAlpha = 0.5;
 
-			const wildlifeAnchor = new TransformNode(`tile${i}-anchor`, this.scene);
-			const wildlife = tileInfo!.wildlife.map((anim) => {
-				const meshName = anim + '-plane';
-				const planeMash = this.scene.getMeshById(meshName)!.clone(`wildlife`, wildlifeAnchor)!;
-				Tags.EnableFor(planeMash);
-				Tags.AddTagsTo(planeMash, `tile tile${i} wildlife`);
-				planeMash.overlayColor = Color3.Gray();
-				planeMash.overlayAlpha = 0.5;
-				planeMash.position.y += 0.11;
-				// planeMash.rotation = new Vector3(0, -Tools.ToRadians(thisStartingTile.rotation), 0);
-				planeMash.visibility = 1;
-				return planeMash;
-			});
+		// 	const wildlifeAnchor = new TransformNode(`tile${i}-anchor`, this.scene);
+		// 	const wildlife = tileInfo!.wildlife.map((anim) => {
+		// 		const meshName = anim + '-plane';
+		// 		const planeMash = this.scene.getMeshById(meshName)!.clone(`wildlife`, wildlifeAnchor)!;
+		// 		Tags.EnableFor(planeMash);
+		// 		Tags.AddTagsTo(planeMash, `tile tile${i} wildlife`);
+		// 		planeMash.overlayColor = Color3.Gray();
+		// 		planeMash.overlayAlpha = 0.5;
+		// 		planeMash.position.y += 0.11;
+		// 		// planeMash.rotation = new Vector3(0, -Tools.ToRadians(thisStartingTile.rotation), 0);
+		// 		planeMash.visibility = 1;
+		// 		return planeMash;
+		// 	});
 
-			wildlifeAnchor.parent = tileMesh;
-			wildlifeAnchor.rotation = new Vector3(0, -Tools.ToRadians(tileInfo!.rotation), 0);
+		// 	wildlifeAnchor.parent = tileMesh;
+		// 	wildlifeAnchor.rotation = new Vector3(0, -Tools.ToRadians(tileInfo!.rotation), 0);
 
-			if (wildlife.length == 2) {
-				wildlife[0].position.x += 0.12;
-				wildlife[0].position.z += 0.12;
-				wildlife[1].position.x -= 0.12;
-				wildlife[1].position.z -= 0.12;
-			} else if (wildlife.length == 3) {
-				wildlife[0].position.z -= 0.2;
-				wildlife[1].position.z += 0.1;
-				wildlife[1].position.x -= 0.2 * Math.cos(Math.PI / 6);
-				wildlife[2].position.x += 0.2 * Math.cos(Math.PI / 6);
-				wildlife[2].position.z += 0.1;
-			}
-		});
+		// 	if (wildlife.length == 2) {
+		// 		wildlife[0].position.x += 0.12;
+		// 		wildlife[0].position.z += 0.12;
+		// 		wildlife[1].position.x -= 0.12;
+		// 		wildlife[1].position.z -= 0.12;
+		// 	} else if (wildlife.length == 3) {
+		// 		wildlife[0].position.z -= 0.2;
+		// 		wildlife[1].position.z += 0.1;
+		// 		wildlife[1].position.x -= 0.2 * Math.cos(Math.PI / 6);
+		// 		wildlife[2].position.x += 0.2 * Math.cos(Math.PI / 6);
+		// 		wildlife[2].position.z += 0.1;
+		// 	}
+		// });
 	}
 
 	protected pushTile() {}
@@ -153,11 +154,10 @@ export class Pocket {
 
 	public highlight(mesh: AbstractMesh) {
 		this.lowlight();
-		[mesh,...mesh.getChildMeshes()].forEach(v=>{
+		[mesh, ...mesh.getChildMeshes()].forEach((v) => {
 			this.hl.addMesh(v as Mesh, Color3.Green());
-		})		
+		});
 	}
-
 
 	public lowlight() {
 		this.hl.removeAllMeshes();
@@ -185,47 +185,40 @@ export class Pocket {
 		await Promise.all([this.deleteTile(tileIndex, 'left'), this.deleteToken(tokenIndex, 'left')]);
 		await sleep(400);
 		this.refillTokens();
+		this.refillTiles();
 		// await Promise.all([this.refillTiles(), this.refillTokens()]);
 	}
 
-	private refillTokens() {
-		const aliveTokens = this.scene.getMeshesById('token');
-		const tiles = aliveTokens.sort((a, b) => this.tokenNumFromName(a.name) - this.tokenNumFromName(b.name));
+	private refillTiles() {
+		const aliveTiles = this.scene.getMeshesById('tile');
+		const tiles = aliveTiles.sort((a, b) => this.tileNumFromName(a.name) - this.tileNumFromName(b.name));
 		while (tiles.length < 4) {
-			tiles.push(this.popToken());
+			tiles.push(this.popTile());
 		}
-		tiles.forEach(async (token, dest) => {
+		tiles.forEach(async (tile, dest) => {
+			const src = this.tileNumFromName(tile.name);
+			const startY = positionY[src];
+			const endY = positionY[dest];
+			await this.createAndStartAnimationAsync('yslide', tile, 'position.y', 60, 50, startY, endY);
+			tile.name = 'tile' + dest;
+		});
+	}
+
+	public refillTokens() {
+		const aliveTokens = this.scene.getMeshesById('token');
+		const tokens = aliveTokens.sort(
+			(a, b) => this.tokenNumFromName(a.name) - this.tokenNumFromName(b.name)
+		);
+		while (tokens.length < 4) {
+			tokens.push(this.popToken());
+		}
+		tokens.forEach(async (token, dest) => {
 			const src = this.tokenNumFromName(token.name);
 			const startY = positionY[src];
 			const endY = positionY[dest];
 			await this.createAndStartAnimationAsync('yslide', token, 'position.y', 60, 50, startY, endY);
 			token.name = 'token' + dest;
 		});
-
-		// const this.tokens
-		// 	.reduce((r, v, index) => {
-		// 		if (v != null) r.push(index);
-		// 		return r;
-		// 	}, [] as number[])
-
-		// 	.forEach(async (start, end) => {
-		// 		const token = this.scene.getMeshByName('token' + start)!;
-		// 		const startY = positionY[start];
-		// 		const endY = positionY[end];
-		// 		await this.createAndStartAnimationAsync(
-		// 			'yslide',
-		// 			token,
-		// 			'position.y',
-		// 			60,
-		// 			50,
-		// 			startY,
-		// 			endY
-		// 		);
-		// 		this.tokens[end] = this.tokens[start];
-		// 		this.tokens[start] = null;
-		// 		token.name = 'token' + end;
-		// 		token.metadata = { ...token.metadata, line: end };
-		// 	});
 	}
 
 	private popToken() {
@@ -242,80 +235,45 @@ export class Pocket {
 		return token;
 	}
 
-	// private popTile() {
-	// 	const tileInfo = this.allTiles.pop()!;
-	// 	const habitatName = tileInfo!.habitats.join('-');
-	// 	const tileMesh = this.scene.getMeshById(habitatName)!.clone(`tile${i}`, this.anchor)!;
-	// 	Tags.EnableFor(tileMesh);
-	// 	Tags.AddTagsTo(tileMesh, `tile tile${i}`);
-	// 	tileMesh.id = 'tile';
-	// 	tileMesh.visibility = 1;
-	// 	tileMesh.position.y += (i - 1.5) * 2;
-	// 	tileMesh.position.x += 0.5;
-	// 	tileMesh.metadata = tileInfo;
+	private popTile() {
+		const tileInfo = this.allTiles.pop()!;
+		const habitatName = tileInfo!.habitats.join('-');
+		const tile = this.scene.getMeshById(habitatName)!.clone(`tile4`, this.anchor)!;
+		tile.id = 'tile';
+		tile.visibility = 1;
+		tile.position.y += (4 - 1.5) * 2;
+		tile.position.x += 0.5;
+		tile.metadata = tileInfo;
 
-	// 	tileMesh.rotation = new Vector3(Tools.ToRadians(90), Tools.ToRadians(tileInfo!.rotation), 0);
-	// 	tileMesh.scaling = new Vector3(0.7, 0.7, 0.7);
-	// 	tileMesh.renderOutline = true;
-	// 	tileMesh.outlineColor = new Color3(0, 0, 0);
-	// 	tileMesh.outlineWidth = 0;
-	// 	tileMesh.renderOverlay = true;
-	// 	tileMesh.overlayColor = Color3.Gray();
-	// 	tileMesh.overlayAlpha = 0.5;
+		tile.rotation = new Vector3(Tools.ToRadians(90), Tools.ToRadians(tileInfo!.rotation), 0);
+		tile.scaling = new Vector3(0.7, 0.7, 0.7);
 
-	// 	const wildlifeAnchor = new TransformNode(`tile${i}-anchor`, this.scene);
-	// 	const wildlife = tileInfo!.wildlife.map((anim) => {
-	// 		const meshName = anim + '-plane';
-	// 		const planeMash = this.scene.getMeshById(meshName)!.clone(`wildlife`, wildlifeAnchor)!;
-	// 		Tags.EnableFor(planeMash);
-	// 		Tags.AddTagsTo(planeMash, `tile tile${i} wildlife`);
-	// 		planeMash.overlayColor = Color3.Gray();
-	// 		planeMash.overlayAlpha = 0.5;
-	// 		planeMash.position.y += 0.11;
-	// 		// planeMash.rotation = new Vector3(0, -Tools.ToRadians(thisStartingTile.rotation), 0);
-	// 		planeMash.visibility = 1;
-	// 		return planeMash;
-	// 	});
+		const wildlifeAnchor = new TransformNode(`tile-anchor`, this.scene);
+		const wildlife = tileInfo!.wildlife.map((anim) => {
+			const meshName = anim + '-plane';
+			const planeMash = this.scene.getMeshById(meshName)!.clone(`wildlife`, wildlifeAnchor)!;
+			planeMash.position.y += 0.11;
+			planeMash.visibility = 1;
+			return planeMash;
+		});
 
-	// 	wildlifeAnchor.parent = tileMesh;
-	// 	wildlifeAnchor.rotation = new Vector3(0, -Tools.ToRadians(tileInfo!.rotation), 0);
+		wildlifeAnchor.parent = tile;
+		wildlifeAnchor.rotation = new Vector3(0, -Tools.ToRadians(tileInfo!.rotation), 0);
 
-	// 	if (wildlife.length == 2) {
-	// 		wildlife[0].position.x += 0.12;
-	// 		wildlife[0].position.z += 0.12;
-	// 		wildlife[1].position.x -= 0.12;
-	// 		wildlife[1].position.z -= 0.12;
-	// 	} else if (wildlife.length == 3) {
-	// 		wildlife[0].position.z -= 0.2;
-	// 		wildlife[1].position.z += 0.1;
-	// 		wildlife[1].position.x -= 0.2 * Math.cos(Math.PI / 6);
-	// 		wildlife[2].position.x += 0.2 * Math.cos(Math.PI / 6);
-	// 		wildlife[2].position.z += 0.1;
-	// 	}
-	// }
-
-	// public refillTiles() {
-	// 	// 이미 있는 토큰 아래로 당기기
-	// 	const shouldPull = this.tiles.reduce((r, v, index) => {
-	// 		if (v != null) r.push(index);
-	// 		return r;
-	// 	}, [] as number[]);
-
-	// 	while(shouldPull.length<4){
-	// 		shouldPull.push(4)
-	// 	}
-
-	// 	const shouldPullPromise = shouldPull.map(async(start, end) => {
-	// 		const tile = this.scene.getMeshByName('tile' + start)?? this.;
-	// 		const tileInfo = this.tiles[start]??;
-	// 		tile.name = 'tile' + end;
-	// 		const startY = positionY[start];
-	// 		const endY = positionY[end];
-	// 		await this.createAndStartAnimationAsync('yslide', tile, 'position.y', 60, 50, startY, endY);
-	// 		this.tiles[end] = tileInfo;
-
-	// 	});
-	// }
+		if (wildlife.length == 2) {
+			wildlife[0].position.x += 0.12;
+			wildlife[0].position.z += 0.12;
+			wildlife[1].position.x -= 0.12;
+			wildlife[1].position.z -= 0.12;
+		} else if (wildlife.length == 3) {
+			wildlife[0].position.z -= 0.2;
+			wildlife[1].position.z += 0.1;
+			wildlife[1].position.x -= 0.2 * Math.cos(Math.PI / 6);
+			wildlife[2].position.x += 0.2 * Math.cos(Math.PI / 6);
+			wildlife[2].position.z += 0.1;
+		}
+		return tile;
+	}
 
 	public tileNumFromName(tags: string) {
 		const regex = /tile(\d+)/;
