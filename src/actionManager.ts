@@ -1,13 +1,23 @@
-import { AbstractMesh, Matrix, Scene, Tags } from '@babylonjs/core';
-import { AdvancedDynamicTexture, Button, Container, Control, StackPanel } from '@babylonjs/gui';
+import {
+	AbstractMesh,
+	ActionManager,
+	ArcRotateCamera,
+	ExecuteCodeAction,
+	Matrix,
+	Mesh,
+	PointerEventTypes,
+	Ray,
+	Scene,
+	Tags,
+	Tools,
+	TransformNode,
+	Vector3,
+} from '@babylonjs/core';
 import { TileInfo } from './interfaces';
 import { Board } from './board';
 import { Pocket } from './pocket';
 
-export class ActionManager {
-	private main: AdvancedDynamicTexture;
-	private panel!: StackPanel;
-	private possible: boolean = true;
+export class CascadiaActionManager {
 	private tileLine: number | null = null;
 	private tokenLine: number | null = null;
 	private selectedTile: TileInfo | null = null;
@@ -17,110 +27,172 @@ export class ActionManager {
 	private selectedHabitat: string | null = null;
 	private useNature: boolean = false;
 	private rotation: number = 0;
+	private faintBoard: boolean = true;
+	private pendings: Record<string, any> = {};
+
 	constructor(private scene: Scene, private board: Board, private pocket: Pocket) {
-		this.main = AdvancedDynamicTexture.CreateFullscreenUI('UI', true, this.scene);
-		this.main.layer!.layerMask = 0x10000000;
-		this.createTileProcPanel();
+		this.setTileActionButtons();
 		this.setPointerDownEvent();
 		this.setPointerMoveEvent();
+
+		// this.scene.onBeforeRenderObservable.add(() => {
+		// 	this.scene.meshes.forEach((mesh) => {
+		// 		if (mesh.renderingGroupId == 0) {
+		// 			mesh.visibility = this.faintBoard ? 0.3 : 1;
+		// 		}
+		// 	});
+		// });
 	}
 
-	private createTileProcPanel() {
-		this.panel = new StackPanel();
-		this.panel.spacing = 20;
-		this.panel.isVertical = false;
-		this.panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-		this.panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+	private setTileActionButtons() {
+		const camAnchor = new TransformNode('cam-anchor', this.scene);
+		camAnchor.parent = this.scene.getCameraByName('camera')!;
+		this.scene.getMeshesByTags('action').forEach((mesh, index) => {
+			mesh.parent = camAnchor;
+			mesh.visibility = 1;
+			mesh.actionManager = new ActionManager(this.scene);
+			switch (mesh.name) {
+				case 'cancel-action':
+					mesh.position = new Vector3(-3, -3.5, 10);
 
-		this.panel.paddingBottomInPixels = 10;
-		this.panel.height = '50px';
-		this.panel.color = 'white';
-		this.panel.isVisible = false;
-		this.main.addControl(this.panel);
+					mesh.actionManager.registerAction(
+						new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (_evt) => {
+							this.tileLine = null;
+							this.targetTile = null;
+							this.setTile = false;
+							this.rotation = 0;
+							this.board.resetPossiblePathMaterial();
+							this.pocket.lowlight();
+							this.hideTileActionButtons();
+						})
+					);
+					break;
+				case 'confirm-action':
+					mesh.position = new Vector3(-1, -3.5, 10);
+					mesh.actionManager.registerAction(
+						new ExecuteCodeAction(ActionManager.OnPickDownTrigger, async (_evt) => {
+							const throwToken = await this.throwToken();
 
-		this.addButton(this.panel, 'red', 'cancel-btn', 'cancel', this.cancel.bind(this));
+							if (throwToken) {
+								this.board.setTile(
+									this.selectedTile!,
+									this.targetTile!,
+									this.rotation
+								);
+								this.pocket.lowlight();
+								if (!this.useNature) {
+									this.selectedToken = this.getTokenFromLineNum(
+										this.tileLine!
+									);
+									this.tokenLine = this.tileLine;
+								}
 
-		this.addButton(this.panel, 'green', 'confirm-btn', 'confirm', this.confirm.bind(this));
+								this.pocket.deleteTile(this.tileLine!, 'right');
+								this.hideTileActionButtons();
+								this.selectedTile = null;
+								this.targetTile = null;
+								this.setTile = true;
+							} else {
+							}
+						})
+					);
+					break;
+				case 'rotate-cw-action':
+					mesh.position = new Vector3(1, -3.5, 10);
+					mesh.actionManager.registerAction(
+						new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (_evt) => {
+							if (this.selectedTile?.habitats.length == 1) return;
+							this.rotation += 60;
+							if (this.rotation >= 360) this.rotation %= 360;
+							this.board.drawHabitat(
+								this.selectedTile!,
+								this.targetTile!,
+								this.rotation
+							);
+						})
+					);
+					break;
+				case 'rotate-ccw-action':
+					mesh.position = new Vector3(3, -3.5, 10);
+					mesh.actionManager.registerAction(
+						new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (_evt) => {
+							if (this.selectedTile?.habitats.length == 1) return;
+							this.rotation -= 60;
+							if (this.rotation <= -360) this.rotation %= 360;
+							this.board.drawHabitat(
+								this.selectedTile!,
+								this.targetTile!,
+								this.rotation
+							);
+						})
+					);
+					break;
+			}
 
-		this.addButton(this.panel, 'blue', 'ccw-btn', 'rotate CCW', () => {
-			this.rotate(true);
+			mesh.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
+			mesh.setEnabled(false);
 		});
-		this.addButton(this.panel, 'magenta', 'cw-btn', 'rotate CW', () => {
-			this.rotate(false);
+
+		this.scene.onPointerObservable.add((pointerInfo) => {
+			if (pointerInfo.type != PointerEventTypes.POINTERDOWN) return;
+			const boardRay = this.scene.createPickingRay(
+				this.scene.pointerX,
+				this.scene.pointerY,
+				Matrix.Identity(),
+				this.scene.getCameraByName('camera')
+			);
 		});
 	}
 
-	private addButton(
-		target: Container | AdvancedDynamicTexture,
-		background: string,
-		name: string,
-		title: string,
-		fn: any
-	) {
-		const addBtn = Button.CreateSimpleButton(name, title);
-		addBtn.width = '100px';
-		addBtn.height = '50px';
-		addBtn.background = background;
-		addBtn.color = 'white';
-		addBtn.onPointerUpObservable.add(fn);
-		target.addControl(addBtn);
-	}
-
 	/**
-	 * 타일 입력을 취소 => 다른 타일 선택
-	 */
-	private cancel() {
-		this.tileLine = null;
-		this.targetTile = null;
-		this.setTile = false;
-		this.rotation = 0;
-
-		this.board.resetPossiblePathMaterial();
-
-		this.pocket.lowlight();
-		this.panel.isVisible = false;
-		this.possible = true;
-	}
-
-	/**
-	 * 타일 입력
-	 */
-	private confirm() {
-		this.board.setTile(this.selectedTile!, this.targetTile!, this.rotation);
-
-		this.pocket.lowlight();
-		if (!this.useNature) {
-			console.log(this.tileLine);
-			this.selectedToken = this.getTokenFromLineNum(this.tileLine!);
-			this.pocket.highlight(this.selectedToken);
-			this.tokenLine = this.tileLine;
-		}
-
-		this.pocket.deleteTile(this.tileLine!, 'right');
-		this.selectedTile = null;
-		this.targetTile = null;
-		this.setTile = true;
-		this.panel.isVisible = false;
-		this.possible = true;
-	}
-
-	/**
-	 * true면 반시계방향 회전,  false면 시계방향 회전
-	 * @param ccw
+	 * false 면 토큰 안 버리는 거니까 타일 선택 취소.
+	 * true면  토큰 버린다는 거니까 계속 진행
 	 * @returns
 	 */
-	private rotate(ccw: boolean) {
-		const angle = ccw ? -60 : 60;
-		if (this.selectedTile?.habitats.length == 1) return;
-		this.rotation += angle;
-		if (this.rotation >= 360) this.rotation %= 360;
-		else if (this.rotation <= -360) this.rotation %= 360;
-		this.board.drawHabitat(this.selectedTile!, this.targetTile!, this.rotation);
+	private async throwToken() {
+		return new Promise<boolean>((resolve) => {
+			const validWildlife = new Set(this.selectedTile?.wildlife);
+
+			for (const [_, tile] of this.board.mapData) {
+				if (tile.placedToken) continue;
+				tile.wildlife.forEach((anim) => validWildlife.add(anim));
+			}
+
+			if (this.useNature) {
+				// 솔방울을 사용헀을 경우
+				resolve(true);
+			}
+			// 솔방울을 사용하지 않았을 경우
+			else {
+				const tokenName = 'token' + this.tileLine;
+				const wildLife = this.scene.getMeshByName(tokenName)!.metadata;
+
+				if (!validWildlife.has(wildLife)) {
+					const throwTag = wildLife + '-throw';
+					this.scene.getMeshesByTags(throwTag).forEach((mesh) => {
+						mesh.setEnabled(true);
+					});
+					this.pendings.set('throw', resolve);
+					return;
+				}
+			}
+		});
+	}
+
+	private showTileActionButtons() {
+		this.scene.getMeshesByTags('action').forEach((mesh) => {
+			mesh.setEnabled(true);
+		});
+	}
+
+	private hideTileActionButtons() {
+		this.scene.getMeshesByTags('action').forEach((mesh) => {
+			mesh.setEnabled(false);
+		});
 	}
 
 	private setPointerDownEvent() {
 		this.scene.onPointerDown = (_evt, _pickInfo) => {
-			if (!this.possible) return;
 			const ray = this.scene.createPickingRay(
 				this.scene.pointerX,
 				this.scene.pointerY,
@@ -157,15 +229,14 @@ export class ActionManager {
 				this.board.resetPossiblePathMaterial();
 				this.pocket.highlight(hitTile.pickedMesh);
 				this.selectedTile = hitTile.pickedMesh?.metadata;
-				this.tileLine = this.pocket.tileNumFromName(hitTile.pickedMesh.name);
+				this.tileLine = this.pocket.numFromName(hitTile.pickedMesh.name);
 			}
 			// 타일 선택 후 보드 선택
 			else if (hitBlank?.hit && hitBlank.pickedMesh && this.selectedTile && !this.setTile) {
 				this.board.resetPossiblePathMaterial();
 				this.targetTile = hitBlank.pickedMesh.name;
-				console.log(this.selectedTile);
 				this.board.drawHabitat(this.selectedTile, this.targetTile, 0);
-				this.showTileActions();
+				this.showTileActionButtons();
 			}
 			// 토큰을 서식지에 배치할 때.
 			else if (
@@ -177,32 +248,27 @@ export class ActionManager {
 				// this.board.setToken()
 				this.board.setToken(this.selectedToken.metadata, this.selectedHabitat);
 				this.pocket.deleteToken(this.tokenLine!, 'right');
-
 				this.pocket.discardFurthest();
-				this.selectedToken = null;
-				this.selectedHabitat = null;
-
-				/**
-				 * 사용한 타일,토큰 제거하기
-				 * 타일 라인이랑 토큰 라인을 알고 있어서,
-				 * 두 메시를 가져오는 것은 어렵지 않고..
-				 *
-				 * 새로운 토큰이랑..타일을 배치해야됨.
-				 *
-				 * pocket으로 가서 하나씩 새로 뽑은 다음.
-				 *
-				 *
-				 *
-				 *
-				 *
-				 */
+				this.resetActionInfo();
 			}
+			//
 		};
+	}
+
+	private resetActionInfo() {
+		this.tileLine = null;
+		this.tokenLine = null;
+		this.selectedTile = null;
+		this.targetTile = null;
+		this.setTile = false;
+		this.selectedToken = null;
+		this.selectedHabitat = null;
+		this.useNature = false;
+		this.rotation = 0;
 	}
 
 	private setPointerMoveEvent() {
 		this.scene.onPointerMove = (_evt, _pickInfo) => {
-			if (!this.possible) return;
 			const ray = this.scene.createPickingRay(
 				this.scene.pointerX,
 				this.scene.pointerY,
@@ -233,28 +299,32 @@ export class ActionManager {
 					this.selectedToken.visibility = 1;
 					const { x, z } = hitHabitat.pickedMesh.position;
 					this.selectedToken.position.x = x;
-					this.selectedToken.position.y = 0.1;
 					this.selectedToken.position.z = z;
 					this.selectedHabitat = hitHabitat.pickedMesh.name;
 				} else {
 					this.selectedToken.visibility = 0;
 					this.selectedHabitat = null;
 				}
-			} else {
 			}
 		};
 	}
 
-	private showTileActions() {
-		this.possible = false;
-		this.panel.isVisible = true;
+	private getTokenFromLineNum(line: number): AbstractMesh {
+		const tokenOrigin = this.scene.getMeshByName('token' + line)!;
+		const wildlife = tokenOrigin.metadata;
+		this.pocket.highlight(tokenOrigin);
+		const token = this.scene.getMeshByName(wildlife + '-token')!.clone(wildlife!, this.board.anchor)!;
+		token.metadata = wildlife;
+		token.position.y = 0.1;
+		return token;
 	}
 
-	private getTokenFromLineNum(line: number): AbstractMesh {
-		console.log(line);
-		const wildlife = this.scene.getMeshByName('token' + line)!.metadata;
-		const mesh = this.scene.getMeshByName(wildlife + '-token')!.clone(wildlife!, this.board.anchor)!;
-		mesh.metadata = wildlife;
-		return mesh;
+	/**
+	 * 팝업 띄우기 전에 호출해주기
+	 */
+	private goToOrigin() {
+		const camera = this.scene.getCameraByName('camera') as ArcRotateCamera;
+		camera.setPosition(new Vector3(0, 16, 0));
+		camera.setTarget(Vector3.Zero());
 	}
 }

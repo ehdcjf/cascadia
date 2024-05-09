@@ -12,7 +12,7 @@ const W = Math.cos(Math.PI / 6);
 
 export class Board {
 	// protected mapData: MapData = new Map();
-	protected mapData: Map<string, Tile> = new Map();
+	public mapData: Map<string, Tile> = new Map();
 	protected possiblePath: Map<string, AbstractMesh> = new Map();
 	public readonly anchor: TransformNode;
 
@@ -30,11 +30,9 @@ export class Board {
 			for (let r = r1; r <= r2; r++) {
 				const s = -q - r;
 				const tileID = this.tileIDFromQRS(q, r, s);
-				const tileMesh = this.scene.getMeshById('beige')!.clone(tileID, this.anchor)!;
+				const tileMesh = this.scene.getMeshById('blank')!.clone(tileID, this.anchor)!;
 				tileMesh.id = 'blank';
 				tileMesh.position = this.tileVectorFromQRS(q, r);
-				tileMesh.overlayColor = Color3.Yellow();
-				tileMesh.overlayAlpha = 0.3;
 				// tileMesh.visibility = 1;
 				// tileMesh.renderOutline = true;
 				// tileMesh.outlineColor = new Color3(0, 0, 0);
@@ -55,31 +53,14 @@ export class Board {
 			const thisStartingTile = startingTile[i];
 			const targetTileID = this.tileIDFromQRS(q, r, s);
 			this.drawHabitat(thisStartingTile, targetTileID, thisStartingTile.rotation);
-			this.drawPossiblePaths(targetTileID);
+
 			this.setTile(thisStartingTile, targetTileID, thisStartingTile.rotation);
 		});
 	}
 
-	// showPossiblePathRay() {
-	// 	this.scene
-	// 		.getMeshesById('blank')
-	// 		.filter((v) => v.visibility == 1)
-	// 		.forEach((mesh) => {
-	// 			mesh.renderOverlay = true;
-	// 		});
-	// }
-
-	// hidePossiblePathRay() {
-	// 	this.scene
-	// 		.getMeshesById('blank')
-	// 		.filter((v) => v.visibility == 1)
-	// 		.forEach((mesh) => {
-	// 			mesh.renderOverlay = false;
-	// 		});
-	// }
-
 	resetPossiblePathMaterial() {
-		const blankMat = this.scene.getMeshById('beige')!.material;
+		const blankMat = this.scene.getMeshById('blank')!.material;
+
 		this.scene
 			.getMeshesById('blank')
 			.filter((v) => v.visibility == 1)
@@ -92,6 +73,7 @@ export class Board {
 	drawHabitat(tileInfo: TileInfo, tileID: string, rotation = 0) {
 		// UI
 		const targetTileMesh = this.scene.getMeshByName(tileID)!;
+
 		// targetTileMesh.visibility = 1;
 
 		const habitatName = tileInfo.habitats.join('-');
@@ -126,11 +108,17 @@ export class Board {
 			anchor.parent = targetTileMesh;
 		}
 		anchor.rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
+
+		targetTileMesh.renderingGroupId = 0;
+		targetTileMesh.getChildMeshes().forEach((mesh) => {
+			mesh.renderingGroupId = 0;
+		});
 	}
 
-	drawPossiblePaths(tileID: string) {
+	private drawPossiblePaths(tileID: string) {
 		this.getNeighborTileIDs(tileID).forEach((neighborTileID) => {
 			const neighborMesh = this.scene.getMeshByName(neighborTileID)!;
+			neighborMesh.renderingGroupId = 0;
 			neighborMesh.visibility = 1;
 		});
 	}
@@ -169,14 +157,17 @@ export class Board {
 			tileNum: this.mapData.size + 1,
 			placedToken: null,
 			habaitats: tileInfo.habitats,
+			wildlife: tileInfo.wildlife,
 			habitatSides: this.getHabitatSides(tileInfo.habitats, rotation),
 			neighborhood: this.getNeighborTileIDs(tileID),
 			qrs: this.qrsFromTileID(tileID),
 		};
 		this.mapData.set(tileID, tile);
+		this.drawPossiblePaths(tileID);
 	}
 
 	public setToken(wildLife: WildLife, tileID: string) {
+		this.scene.getMeshByName(tileID)!.id = 'used-habitat';
 		const tile = this.mapData.get(tileID)!;
 		tile.placedToken = wildLife;
 		this.mapData.set(tileID, tile);

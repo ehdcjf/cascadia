@@ -32,7 +32,7 @@ export class Pocket {
 		this.setupTiles();
 		this.setupTokens();
 		this.refillTokens();
-		this.refillTiles()
+		this.refillTiles();
 		// for (let i = 0; i < 4; i++) {
 		// 	this.tiles.push(this.allTiles.pop()!);
 		// }
@@ -93,33 +93,6 @@ export class Pocket {
 
 	protected pushToken() {}
 
-	async createAndStartAnimationAsync(
-		name: string,
-		target: any,
-		targetProperty: string,
-		framePerSecond: number,
-		totalFrame: number,
-		from: any,
-		to: any
-	) {
-		return new Promise<void>((resolve) => {
-			Animation.CreateAndStartAnimation(
-				name,
-				target,
-				targetProperty,
-				framePerSecond,
-				totalFrame,
-				from,
-				to,
-				Animation.ANIMATIONLOOPMODE_CONSTANT,
-				undefined,
-				() => {
-					resolve();
-				}
-			);
-		});
-	}
-
 	protected setupTokens() {
 		const tokenNums: Record<WildLife, number> = {
 			bear: 20,
@@ -164,25 +137,55 @@ export class Pocket {
 	}
 
 	public async deleteToken(index: number, dir: 'right' | 'left') {
-		this.tokens[index] = null;
 		const token = this.scene.getMeshByName('token' + index)!;
 		const end = dir == 'left' ? 2 : -2;
-		await this.createAndStartAnimationAsync('tokenSlide', token, 'position.x', 60, 50, -1, end);
+		await Animation.CreateAndStartAnimation(
+			'deleteTokenAnim',
+			token,
+			'position.x',
+			60,
+			50,
+			-1,
+			end,
+			Animation.ANIMATIONLOOPMODE_CONSTANT
+		)!.waitAsync();
 		token.dispose();
 	}
 
 	public async deleteTile(index: number, dir: 'right' | 'left') {
-		this.tiles[index] = null;
 		const tile = this.scene.getMeshByName('tile' + index)!;
 		const end = dir == 'left' ? 2 : -2;
-		await this.createAndStartAnimationAsync('tileSlide', tile, 'position.x', 60, 40, 0.5, end);
+		await Animation.CreateAndStartAnimation(
+			'deleteTileAnim',
+			tile,
+			'position.x',
+			60,
+			40,
+			0.5,
+			end,
+			Animation.ANIMATIONLOOPMODE_CONSTANT,
+			undefined,
+			() => {},
+			this.scene
+		)!.waitAsync();
+
 		tile.dispose();
 	}
 
 	public async discardFurthest() {
-		const tileIndex = this.tiles.findIndex((tile) => tile != null);
-		const tokenIndex = this.tokens.findIndex((token) => token != null);
-		await Promise.all([this.deleteTile(tileIndex, 'left'), this.deleteToken(tokenIndex, 'left')]);
+		const tileIndex = this.scene
+			.getMeshesById('tile')
+			.map((v) => this.numFromName(v.name))
+			.sort((a, b) => a - b)[0];
+		const tokenIndex = this.scene
+			.getMeshesById('token')
+			.map((v) => this.numFromName(v.name))
+			.sort((a, b) => a - b)[0];
+
+		await Promise.all([
+			this.deleteTile.call(this, tileIndex, 'left'),
+			this.deleteToken.call(this, tokenIndex, 'left'),
+		]);
 		await sleep(400);
 		this.refillTokens();
 		this.refillTiles();
@@ -191,32 +194,50 @@ export class Pocket {
 
 	private refillTiles() {
 		const aliveTiles = this.scene.getMeshesById('tile');
-		const tiles = aliveTiles.sort((a, b) => this.tileNumFromName(a.name) - this.tileNumFromName(b.name));
+		const tiles = aliveTiles.sort((a, b) => this.numFromName(a.name) - this.numFromName(b.name));
 		while (tiles.length < 4) {
 			tiles.push(this.popTile());
 		}
 		tiles.forEach(async (tile, dest) => {
-			const src = this.tileNumFromName(tile.name);
+			const src = this.numFromName(tile.name);
 			const startY = positionY[src];
 			const endY = positionY[dest];
-			await this.createAndStartAnimationAsync('yslide', tile, 'position.y', 60, 50, startY, endY);
+
+			await Animation.CreateAndStartAnimation(
+				'refillTile',
+				tile,
+				'position.y',
+				60,
+				50,
+				startY,
+				endY,
+				Animation.ANIMATIONLOOPMODE_CONSTANT
+			)!.waitAsync();
+
 			tile.name = 'tile' + dest;
 		});
 	}
 
 	public refillTokens() {
 		const aliveTokens = this.scene.getMeshesById('token');
-		const tokens = aliveTokens.sort(
-			(a, b) => this.tokenNumFromName(a.name) - this.tokenNumFromName(b.name)
-		);
+		const tokens = aliveTokens.sort((a, b) => this.numFromName(a.name) - this.numFromName(b.name));
 		while (tokens.length < 4) {
 			tokens.push(this.popToken());
 		}
 		tokens.forEach(async (token, dest) => {
-			const src = this.tokenNumFromName(token.name);
+			const src = this.numFromName(token.name);
 			const startY = positionY[src];
 			const endY = positionY[dest];
-			await this.createAndStartAnimationAsync('yslide', token, 'position.y', 60, 50, startY, endY);
+			await Animation.CreateAndStartAnimation(
+				'refillToken',
+				token,
+				'position.y',
+				60,
+				50,
+				startY,
+				endY,
+				Animation.ANIMATIONLOOPMODE_CONSTANT
+			)!.waitAsync();
 			token.name = 'token' + dest;
 		});
 	}
@@ -275,13 +296,8 @@ export class Pocket {
 		return tile;
 	}
 
-	public tileNumFromName(tags: string) {
-		const regex = /tile(\d+)/;
-		const match = tags.match(regex)!;
-		return +match[1];
-	}
-	public tokenNumFromName(tags: string) {
-		const regex = /token(\d+)/;
+	public numFromName(tags: string) {
+		const regex = /(\d)$/;
 		const match = tags.match(regex)!;
 		return +match[1];
 	}

@@ -11,12 +11,15 @@ import {
 	Tools,
 	Viewport,
 	Matrix,
+	PointerEventTypes,
+	Tags,
+	TransformNode,
 } from '@babylonjs/core';
 
 import * as BABYLON from '@babylonjs/core';
 import { Board } from './board';
 import { Pocket } from './pocket';
-import { ActionManager } from './actionManager';
+import { CascadiaActionManager } from './actionManager';
 import { Inspector } from '@babylonjs/inspector';
 (window as any).BABYLON = BABYLON;
 
@@ -28,8 +31,7 @@ class App {
 	private engine!: Engine;
 	private board!: Board;
 	private pocket!: Pocket;
-
-	tilaAction!: ActionManager;
+	tilaAction!: CascadiaActionManager;
 
 	constructor() {
 		this.init();
@@ -42,7 +44,7 @@ class App {
 		await this.createScene();
 		this.board = new Board(this.scene);
 		this.pocket = new Pocket(this.scene);
-		this.tilaAction = new ActionManager(this.scene, this.board, this.pocket);
+		this.tilaAction = new CascadiaActionManager(this.scene, this.board, this.pocket);
 
 		this.engine.runRenderLoop(() => {
 			if (this.scene) this.scene.render();
@@ -66,7 +68,7 @@ class App {
 		);
 		camera.upperBetaLimit = Tools.ToRadians(80);
 		camera.lowerRadiusLimit = 5;
-		camera.upperRadiusLimit = 40;
+		// camera.upperRadiusLimit = 40;
 		const camera2 = new ArcRotateCamera(
 			'camera2',
 			Tools.ToRadians(90),
@@ -98,9 +100,93 @@ class App {
 	}
 
 	private async loadAssetAsync() {
-		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia.glb', this.scene);
+		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia-text.glb', this.scene);
 		assets.meshes.forEach((mesh, _i) => {
+			mesh.renderingGroupId = 1;
 			mesh.visibility = 0;
+			if (mesh.id.includes('throw')) {
+				mesh.visibility = 1;
+				Tags.AddTagsTo(mesh, 'popup');
+				if (mesh.id.includes('bear')) {
+					Tags.AddTagsTo(mesh, 'bear-throw');
+				} else if (mesh.id.includes('elk')) {
+					Tags.AddTagsTo(mesh, 'elk-throw');
+				} else if (mesh.id.includes('salmon')) {
+					Tags.AddTagsTo(mesh, 'salmon-throw');
+				} else if (mesh.id.includes('hawk')) {
+					Tags.AddTagsTo(mesh, 'hawk-throw');
+				} else if (mesh.id.includes('fox')) {
+					Tags.AddTagsTo(mesh, 'fox-throw');
+				} else {
+					Tags.AddTagsTo(mesh, 'bear-throw elk-throw salmon-throw hawk-throw fox-throw');
+				}
+				mesh.setEnabled(false);
+			} else if (mesh.id.includes('wipe')) {
+				mesh.visibility = 1;
+				Tags.AddTagsTo(mesh, 'popup');
+				if (mesh.id.includes('bear')) {
+					Tags.AddTagsTo(mesh, 'bear-wipe');
+				} else if (mesh.id.includes('elk')) {
+					Tags.AddTagsTo(mesh, 'elk-wipe');
+				} else if (mesh.id.includes('salmon')) {
+					Tags.AddTagsTo(mesh, 'salmon-wipe');
+				} else if (mesh.id.includes('hawk')) {
+					Tags.AddTagsTo(mesh, 'hawk-wipe');
+				} else if (mesh.id.includes('fox')) {
+					Tags.AddTagsTo(mesh, 'fox-wipe');
+				} else {
+					Tags.AddTagsTo(mesh, 'bear-wipe elk-wipe salmon-wipe hawk-wipe fox-wipe');
+				}
+				mesh.setEnabled(false);
+			} else if (mesh.id.includes('action')) {
+				mesh.visibility = 1;
+				Tags.AddTagsTo(mesh, 'action');
+				mesh.setEnabled(false);
+			}
+		});
+
+		// this.scene.getMeshesByTags('salmon-wipe').forEach((mesh) => {
+		// 	mesh.visibility = 1;
+		// });
+	}
+
+	testMoveCam() {
+		const text = this.scene.getMeshById('bear-throw')!;
+		const cancel = this.scene.getMeshById('bear-throw-cancel')!;
+
+		const confirm = this.scene.getMeshById('bear-throw-confirm')!;
+		cancel.visibility = 1;
+		confirm.visibility = 1;
+		text.visibility = 1;
+		const camera = this.scene.getCameraByName('camera') as ArcRotateCamera;
+		const originCameraPosition = camera.position;
+		const originCameraTarget = camera.target;
+
+		camera.setPosition(originCameraPosition.add(new Vector3(100, 20, 100)));
+		camera.setTarget(originCameraTarget.add(new Vector3(100, 0, 100)));
+
+		this.scene.onPointerObservable.add((pointerInfo) => {
+			if (pointerInfo.type == PointerEventTypes.POINTERDOWN) {
+				const boardRay = this.scene.createPickingRay(
+					this.scene.pointerX,
+					this.scene.pointerY,
+					Matrix.Identity(),
+					this.scene.getCameraByName('camera')
+				);
+				const camera = this.scene.getCameraByName('camera') as ArcRotateCamera;
+
+				const hitAction = this.scene.pickWithRay(boardRay, (mesh) => {
+					return (
+						mesh &&
+						(mesh?.id == 'bear-throw-cancel' || mesh?.id == 'bear-throw-confirm')
+					);
+				});
+
+				if (hitAction?.hit && hitAction.pickedMesh) {
+					camera.setPosition(new Vector3(0, 16, 0));
+					camera.setTarget(Vector3.Zero());
+				}
+			}
 		});
 	}
 }

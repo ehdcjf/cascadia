@@ -5,6 +5,7 @@ export type Tile = {
 	tileNum: number;
 	placedToken: null | WildLife;
 	habaitats: Array<Habitat>;
+	wildlife: Array<WildLife>;
 	habitatSides: Array<Habitat | null>;
 	neighborhood: Array<string>;
 	qrs: QRS;
