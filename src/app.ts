@@ -19,7 +19,7 @@ import {
 import * as BABYLON from '@babylonjs/core';
 import { Board } from './board';
 import { Pocket } from './pocket';
-import { CascadiaActionManager } from './actionManager';
+import { CascadiaActionManager } from './action';
 import { Inspector } from '@babylonjs/inspector';
 (window as any).BABYLON = BABYLON;
 

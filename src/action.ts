@@ -1,16 +1,20 @@
 import {
 	AbstractMesh,
+	ActionEvent,
 	ActionManager,
 	ArcRotateCamera,
+	Condition,
 	ExecuteCodeAction,
 	Matrix,
 	Mesh,
 	PointerEventTypes,
+	PredicateCondition,
 	Ray,
 	Scene,
 	Tags,
 	Tools,
 	TransformNode,
+	ValueCondition,
 	Vector3,
 } from '@babylonjs/core';
 import { TileInfo } from './interfaces';
@@ -27,21 +31,45 @@ export class CascadiaActionManager {
 	private selectedHabitat: string | null = null;
 	private useNature: boolean = false;
 	private rotation: number = 0;
-	private faintBoard: boolean = true;
-	private pendings: Record<string, any> = {};
+	private faintBoard: boolean = false;
 
 	constructor(private scene: Scene, private board: Board, private pocket: Pocket) {
 		this.setTileActionButtons();
 		this.setPointerDownEvent();
 		this.setPointerMoveEvent();
+		this.setThrowActionButton();
+		this.scene.onBeforeRenderObservable.add(() => {
+			this.scene.meshes.forEach((mesh) => {
+				if (mesh.renderingGroupId == 0) {
+					mesh.visibility = this.faintBoard ? 0.3 : 1;
+				}
+			});
+		});
+	}
 
-		// this.scene.onBeforeRenderObservable.add(() => {
-		// 	this.scene.meshes.forEach((mesh) => {
-		// 		if (mesh.renderingGroupId == 0) {
-		// 			mesh.visibility = this.faintBoard ? 0.3 : 1;
-		// 		}
-		// 	});
-		// });
+	private setThrowActionButton() {
+
+		// 타일 선택 취소
+		this.scene
+			.getTransformNodeById('cancel-throw')
+			?.getChildMeshes()
+			.forEach((mesh) => {
+				mesh.actionManager = new ActionManager(this.scene);
+				mesh.actionManager.registerAction(
+					new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (_evt) => {})
+				);
+			});
+
+		// 토큰 버리기
+		this.scene
+			.getTransformNodeById('confirm-throw')
+			?.getChildMeshes()
+			.forEach((mesh) => {
+				mesh.actionManager = new ActionManager(this.scene);
+				mesh.actionManager.registerAction(
+					new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (_evt) => {})
+				);
+			});
 	}
 
 	private setTileActionButtons() {
@@ -50,7 +78,8 @@ export class CascadiaActionManager {
 		this.scene.getMeshesByTags('action').forEach((mesh, index) => {
 			mesh.parent = camAnchor;
 			mesh.visibility = 1;
-			mesh.actionManager = new ActionManager(this.scene);
+			const actionManager = new ActionManager(this.scene);
+			mesh.actionManager = actionManager;
 			switch (mesh.name) {
 				case 'cancel-action':
 					mesh.position = new Vector3(-3, -3.5, 10);
@@ -69,33 +98,25 @@ export class CascadiaActionManager {
 					break;
 				case 'confirm-action':
 					mesh.position = new Vector3(-1, -3.5, 10);
-					mesh.actionManager.registerAction(
-						new ExecuteCodeAction(ActionManager.OnPickDownTrigger, async (_evt) => {
-							const throwToken = await this.throwToken();
 
-							if (throwToken) {
-								this.board.setTile(
-									this.selectedTile!,
-									this.targetTile!,
-									this.rotation
-								);
-								this.pocket.lowlight();
-								if (!this.useNature) {
-									this.selectedToken = this.getTokenFromLineNum(
-										this.tileLine!
-									);
-									this.tokenLine = this.tileLine;
-								}
-
-								this.pocket.deleteTile(this.tileLine!, 'right');
-								this.hideTileActionButtons();
-								this.selectedTile = null;
-								this.targetTile = null;
-								this.setTile = true;
-							} else {
-							}
-						})
+					// 보통의 경우
+					const baseAction = new ExecuteCodeAction(
+						ActionManager.OnPickDownTrigger,
+						this.confirm.bind(this),
+						new PredicateCondition(actionManager, () => this.useNature == false)
 					);
+
+					// 솔방울 사용했을 경우
+					const natureAction = new ExecuteCodeAction(
+						ActionManager.OnPickDownTrigger,
+						async (_evt) => {
+							alert('Tlqkf');
+						},
+						new PredicateCondition(actionManager, () => this.useNature == true)
+					);
+
+					mesh.actionManager.registerAction(baseAction);
+					mesh.actionManager.registerAction(natureAction);
 					break;
 				case 'rotate-cw-action':
 					mesh.position = new Vector3(1, -3.5, 10);
@@ -144,40 +165,65 @@ export class CascadiaActionManager {
 		});
 	}
 
-	/**
-	 * false 면 토큰 안 버리는 거니까 타일 선택 취소.
-	 * true면  토큰 버린다는 거니까 계속 진행
-	 * @returns
-	 */
-	private async throwToken() {
-		return new Promise<boolean>((resolve) => {
-			const validWildlife = new Set(this.selectedTile?.wildlife);
+	private confirm(_evt: ActionEvent) {
+		console.log(this);
+		// 해당 타일을 배치하였을 때,  같은 라인에 있는 토큰을 보드에 배치할 수 있는지 확인
+		const possibleWildlife = new Set(this.selectedTile?.wildlife);
 
-			for (const [_, tile] of this.board.mapData) {
-				if (tile.placedToken) continue;
-				tile.wildlife.forEach((anim) => validWildlife.add(anim));
-			}
+		for (const [_, tile] of this.board.mapData) {
+			if (tile.placedToken) continue;
+			tile.wildlife.forEach((anim) => possibleWildlife.add(anim));
+		}
 
-			if (this.useNature) {
-				// 솔방울을 사용헀을 경우
-				resolve(true);
-			}
-			// 솔방울을 사용하지 않았을 경우
-			else {
-				const tokenName = 'token' + this.tileLine;
-				const wildLife = this.scene.getMeshByName(tokenName)!.metadata;
+		const wildlife = this.getTokenFromLineNum(this.tileLine!).metadata;
 
-				if (!validWildlife.has(wildLife)) {
-					const throwTag = wildLife + '-throw';
-					this.scene.getMeshesByTags(throwTag).forEach((mesh) => {
-						mesh.setEnabled(true);
-					});
-					this.pendings.set('throw', resolve);
-					return;
-				}
-			}
-		});
+		// 토큰을 배치할 수 있는 경우
+		if (possibleWildlife.has(wildlife)) {
+			this.board.setTile(this.selectedTile!, this.targetTile!, this.rotation);
+			this.pocket.lowlight();
+			this.selectedToken = this.getTokenFromLineNum(this.tileLine!);
+			this.tokenLine = this.tileLine;
+			this.pocket.deleteTile(this.tileLine!, 'right');
+			this.hideTileActionButtons();
+			this.selectedTile = null;
+			this.targetTile = null;
+			this.setTile = true;
+		}
+		// 토큰을 배치할 수 없는 경우, 해당 토큰을 배치하는 것을 포기할 것인지(토큰 버릴건지)
+		// 아니면 타일 배치를 다시할 것인지 선택해야함.
+		else {
+			const throwTag = wildlife + '-throw';
+			this.scene.getMeshesByTags(throwTag).forEach((mesh) => {
+				mesh.setEnabled(true);
+			});
+			this.faintBoard = true;
+		}
 	}
+
+	// private async throwToken() {
+	// 	return new Promise<boolean>((resolve) => {
+	// 		const validWildlife = new Set(this.selectedTile?.wildlife);
+
+	// 		for (const [_, tile] of this.board.mapData) {
+	// 			if (tile.placedToken) continue;
+	// 			tile.wildlife.forEach((anim) => validWildlife.add(anim));
+	// 		}
+
+	// 		if (this.useNature) {
+	// 			// 솔방울을 사용헀을 경우
+	// 			resolve(true);
+	// 		}
+	// 		// 솔방울을 사용하지 않았을 경우
+	// 		else {
+	// 			const tokenName = 'token' + this.tileLine;
+	// 			const wildLife = this.scene.getMeshByName(tokenName)!.metadata;
+
+	// 			if (!validWildlife.has(wildLife)) {
+
+	// 			}
+	// 		}
+	// 	});
+	// }
 
 	private showTileActionButtons() {
 		this.scene.getMeshesByTags('action').forEach((mesh) => {
@@ -192,7 +238,7 @@ export class CascadiaActionManager {
 	}
 
 	private setPointerDownEvent() {
-		this.scene.onPointerDown = (_evt, _pickInfo) => {
+		this.scene.onPointerDown = async (_evt, _pickInfo) => {
 			const ray = this.scene.createPickingRay(
 				this.scene.pointerX,
 				this.scene.pointerY,
@@ -247,7 +293,7 @@ export class CascadiaActionManager {
 			) {
 				// this.board.setToken()
 				this.board.setToken(this.selectedToken.metadata, this.selectedHabitat);
-				this.pocket.deleteToken(this.tokenLine!, 'right');
+				await this.pocket.deleteToken(this.tokenLine!, 'right');
 				this.pocket.discardFurthest();
 				this.resetActionInfo();
 			}
@@ -314,6 +360,7 @@ export class CascadiaActionManager {
 		const wildlife = tokenOrigin.metadata;
 		this.pocket.highlight(tokenOrigin);
 		const token = this.scene.getMeshByName(wildlife + '-token')!.clone(wildlife!, this.board.anchor)!;
+		// token.renderingGroupId = 0;
 		token.metadata = wildlife;
 		token.position.y = 0.1;
 		return token;

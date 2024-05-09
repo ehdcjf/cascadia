@@ -136,6 +136,7 @@ export class Board {
 			habitatSides.fill(habitats[0]);
 		} else {
 			const [h1, h2] = habitats;
+			
 			let currentHabitat = h1;
 			let habitatIndex = this.getRotationIndex(rotation);
 

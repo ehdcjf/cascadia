@@ -138,6 +138,7 @@ export class Pocket {
 
 	public async deleteToken(index: number, dir: 'right' | 'left') {
 		const token = this.scene.getMeshByName('token' + index)!;
+
 		const end = dir == 'left' ? 2 : -2;
 		await Animation.CreateAndStartAnimation(
 			'deleteTokenAnim',
