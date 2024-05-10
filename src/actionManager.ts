@@ -12,6 +12,7 @@ import {
 	Tools,
 	TransformNode,
 	Vector3,
+	Animation,
 } from '@babylonjs/core';
 import { TileInfo } from './interfaces';
 import { Board } from './board';
@@ -56,14 +57,30 @@ export class CascadiaActionManager {
 					mesh.position = new Vector3(-3, -3.5, 10);
 
 					mesh.actionManager.registerAction(
-						new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (_evt) => {
-							this.tileLine = null;
-							this.targetTile = null;
-							this.setTile = false;
-							this.rotation = 0;
-							this.board.resetPossiblePathMaterial();
-							this.pocket.lowlight();
-							this.hideTileActionButtons();
+						new ExecuteCodeAction(ActionManager.OnPickDownTrigger, async (_evt) => {
+							// this.tileLine = null;
+							// this.targetTile = null;
+							// this.setTile = false;
+							// this.rotation = 0;
+							// this.board.resetPossiblePathMaterial();
+							// this.pocket.lowlight();
+							// this.hideTileActionButtons();
+
+							const mesh = this.scene.getMeshByName('tile' + this.tileLine)!;
+							const src = mesh.getAbsolutePosition().clone();
+
+							mesh.parent = this.board.anchor;
+
+							await Animation.CreateAndStartAnimation(
+								'refillToken',
+								mesh,
+								'position',
+								60,
+								60,
+								new Vector3(0, 50, 0),
+								new Vector3(0, 0, 0),
+								Animation.ANIMATIONLOOPMODE_YOYO
+							)!.waitAsync();
 						})
 					);
 					break;

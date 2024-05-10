@@ -42,9 +42,9 @@ class App {
 		this.engine = (await EngineFactory.CreateAsync(canvas, undefined)) as Engine;
 
 		await this.createScene();
-		this.board = new Board(this.scene);
-		this.pocket = new Pocket(this.scene);
-		this.tilaAction = new CascadiaActionManager(this.scene, this.board, this.pocket);
+		// this.board = new Board(this.scene);
+		// this.pocket = new Pocket(this.scene);
+		// this.tilaAction = new CascadiaActionManager(this.scene, this.board, this.pocket);
 
 		this.engine.runRenderLoop(() => {
 			if (this.scene) this.scene.render();
@@ -100,12 +100,12 @@ class App {
 	}
 
 	private async loadAssetAsync() {
-		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia-text.glb', this.scene);
+		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia6.glb', this.scene);
+
+
 		assets.meshes.forEach((mesh, _i) => {
 			mesh.renderingGroupId = 1;
-			mesh.visibility = 0;
 			if (mesh.id.includes('throw')) {
-				mesh.visibility = 1;
 				Tags.AddTagsTo(mesh, 'popup');
 				if (mesh.id.includes('bear')) {
 					Tags.AddTagsTo(mesh, 'bear-throw');
@@ -122,7 +122,6 @@ class App {
 				}
 				mesh.setEnabled(false);
 			} else if (mesh.id.includes('wipe')) {
-				mesh.visibility = 1;
 				Tags.AddTagsTo(mesh, 'popup');
 				if (mesh.id.includes('bear')) {
 					Tags.AddTagsTo(mesh, 'bear-wipe');
@@ -139,7 +138,6 @@ class App {
 				}
 				mesh.setEnabled(false);
 			} else if (mesh.id.includes('action')) {
-				mesh.visibility = 1;
 				Tags.AddTagsTo(mesh, 'action');
 				mesh.setEnabled(false);
 			}

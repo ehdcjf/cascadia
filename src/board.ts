@@ -1,5 +1,5 @@
 import { AbstractMesh, Color3, Matrix, MeshBuilder, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
-import { startingTiles } from './data';
+import { startingTiles } from '../src2/data';
 import { Habitat, Tile, TileInfo, WildLife } from './interfaces';
 import { TileScoring } from './score/tile';
 const rotationIndexes = {
@@ -30,10 +30,11 @@ export class Board {
 			for (let r = r1; r <= r2; r++) {
 				const s = -q - r;
 				const tileID = this.tileIDFromQRS(q, r, s);
+
 				const tileMesh = this.scene.getMeshById('blank')!.clone(tileID, this.anchor)!;
 				tileMesh.id = 'blank';
 				tileMesh.position = this.tileVectorFromQRS(q, r);
-				// tileMesh.visibility = 1;
+				tileMesh.visibility = 1;
 				// tileMesh.renderOutline = true;
 				// tileMesh.outlineColor = new Color3(0, 0, 0);
 				// tileMesh.outlineWidth = 0;

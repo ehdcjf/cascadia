@@ -13,7 +13,7 @@ import {
 	AbstractMesh,
 } from '@babylonjs/core';
 import { TileInfo, WildLife } from './interfaces';
-import { tiles } from './data';
+import { tiles } from '../src2/data';
 import { setVisibility, sleep } from './utils';
 const positionY = [-3, -1, 1, 3, 5];
 export class Pocket {
