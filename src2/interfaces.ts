@@ -1,5 +1,43 @@
 export type WildLife = 'bear' | 'elk' | 'hawk' | 'salmon' | 'fox';
 export type Habitat = 'desert' | 'forest' | 'lake' | 'mountain' | 'swamp';
+export type TileKey =
+	| 'desert-lake'
+	| 'desert-swamp'
+	| 'desert'
+	| 'forest-desert'
+	| 'forest-lake'
+	| 'forest-swamp'
+	| 'lake-mountain'
+	| 'mountain-desert'
+	| 'mountain-forest'
+	| 'mountain-swamp'
+	| 'swamp-lake'
+	| 'blank'
+	| 'forest'
+	| 'lake'
+	| 'mountain'
+	| 'swamp';
+
+export type TokenKey =
+	| 'bear'
+	| 'elk'
+	| 'fox'
+	| 'hawk'
+	| 'salmon'
+	| 'pinecone'
+	| 'bear-active'
+	| 'elk-active'
+	| 'fox-active'
+	| 'hawk-active'
+	| 'salmon-active'
+	| 'bear-inactive'
+	| 'elk-inactive'
+	| 'fox-inactive'
+	| 'hawk-inactive'
+	| 'salmon-inactive';
+
+export type ActionKey = 'cancel' | 'confirm' | 'rotate-cw' | 'rotate-ccw';
+
 export type TileInfo = { tileNum: string; habitats: Habitat[]; wildlife: WildLife[]; rotation: number };
 export type Tile = {
 	tileNum: number;
@@ -18,4 +56,3 @@ export type GroupResult = {
 	score: number;
 	groups: string[][];
 };
-

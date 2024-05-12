@@ -14,6 +14,10 @@ import {
 	PointerEventTypes,
 	Tags,
 	TransformNode,
+	ActionManager,
+	ExecuteCodeAction,
+	PredicateCondition,
+	Condition,
 } from '@babylonjs/core';
 
 import * as BABYLON from '@babylonjs/core';
@@ -21,6 +25,7 @@ import { Board } from './board';
 import { Pocket } from './pocket';
 import { CascadiaActionManager } from './actionManager';
 import { Inspector } from '@babylonjs/inspector';
+import { MaterialManager } from './material';
 (window as any).BABYLON = BABYLON;
 
 // const H = 1.5;
@@ -32,7 +37,7 @@ class App {
 	private board!: Board;
 	private pocket!: Pocket;
 	tilaAction!: CascadiaActionManager;
-
+	num = 10;
 	constructor() {
 		this.init();
 	}
@@ -42,8 +47,25 @@ class App {
 		this.engine = (await EngineFactory.CreateAsync(canvas, undefined)) as Engine;
 
 		await this.createScene();
-		// this.board = new Board(this.scene);
-		// this.pocket = new Pocket(this.scene);
+		const mat = new MaterialManager(this.scene);
+		const actionManager = new ActionManager(this.scene);
+		const someAction = new ExecuteCodeAction(
+			ActionManager.OnPickDownTrigger,
+			(_evt) => {
+				this.num++;
+				console.log(this.num);
+				console.log('xxxxxx');
+				console.log(_evt.additionalData.pickedMesh.name);
+				console.log(_evt.meshUnderPointer!.name);
+				console.log(this);
+			},
+			new PredicateCondition(actionManager, () => this.num < 20)
+		);
+
+		// someAction.setTriggerParameter(this);
+
+		this.board = new Board(this.scene, mat, someAction);
+		// this.pocket = new Pocket(this.scene, mat);
 		// this.tilaAction = new CascadiaActionManager(this.scene, this.board, this.pocket);
 
 		this.engine.runRenderLoop(() => {
@@ -68,7 +90,7 @@ class App {
 		);
 		camera.upperBetaLimit = Tools.ToRadians(80);
 		camera.lowerRadiusLimit = 5;
-		// camera.upperRadiusLimit = 40;
+		camera.upperRadiusLimit = 60;
 		const camera2 = new ArcRotateCamera(
 			'camera2',
 			Tools.ToRadians(90),
@@ -100,93 +122,109 @@ class App {
 	}
 
 	private async loadAssetAsync() {
-		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia6.glb', this.scene);
-
+		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia-final.glb', this.scene);
 
 		assets.meshes.forEach((mesh, _i) => {
-			mesh.renderingGroupId = 1;
-			if (mesh.id.includes('throw')) {
-				Tags.AddTagsTo(mesh, 'popup');
-				if (mesh.id.includes('bear')) {
-					Tags.AddTagsTo(mesh, 'bear-throw');
-				} else if (mesh.id.includes('elk')) {
-					Tags.AddTagsTo(mesh, 'elk-throw');
-				} else if (mesh.id.includes('salmon')) {
-					Tags.AddTagsTo(mesh, 'salmon-throw');
-				} else if (mesh.id.includes('hawk')) {
-					Tags.AddTagsTo(mesh, 'hawk-throw');
-				} else if (mesh.id.includes('fox')) {
-					Tags.AddTagsTo(mesh, 'fox-throw');
-				} else {
-					Tags.AddTagsTo(mesh, 'bear-throw elk-throw salmon-throw hawk-throw fox-throw');
-				}
-				mesh.setEnabled(false);
-			} else if (mesh.id.includes('wipe')) {
-				Tags.AddTagsTo(mesh, 'popup');
-				if (mesh.id.includes('bear')) {
-					Tags.AddTagsTo(mesh, 'bear-wipe');
-				} else if (mesh.id.includes('elk')) {
-					Tags.AddTagsTo(mesh, 'elk-wipe');
-				} else if (mesh.id.includes('salmon')) {
-					Tags.AddTagsTo(mesh, 'salmon-wipe');
-				} else if (mesh.id.includes('hawk')) {
-					Tags.AddTagsTo(mesh, 'hawk-wipe');
-				} else if (mesh.id.includes('fox')) {
-					Tags.AddTagsTo(mesh, 'fox-wipe');
-				} else {
-					Tags.AddTagsTo(mesh, 'bear-wipe elk-wipe salmon-wipe hawk-wipe fox-wipe');
-				}
-				mesh.setEnabled(false);
-			} else if (mesh.id.includes('action')) {
-				Tags.AddTagsTo(mesh, 'action');
-				mesh.setEnabled(false);
-			}
+			mesh.visibility = 0;
+			// mesh.renderingGroupId = 1;
+			// if (mesh.id.includes('throw')) {
+			// 	Tags.AddTagsTo(mesh, 'popup');
+			// 	if (mesh.id.includes('bear')) {
+			// 		Tags.AddTagsTo(mesh, 'bear-throw');
+			// 	} else if (mesh.id.includes('elk')) {
+			// 		Tags.AddTagsTo(mesh, 'elk-throw');
+			// 	} else if (mesh.id.includes('salmon')) {
+			// 		Tags.AddTagsTo(mesh, 'salmon-throw');
+			// 	} else if (mesh.id.includes('hawk')) {
+			// 		Tags.AddTagsTo(mesh, 'hawk-throw');
+			// 	} else if (mesh.id.includes('fox')) {
+			// 		Tags.AddTagsTo(mesh, 'fox-throw');
+			// 	} else {
+			// 		Tags.AddTagsTo(mesh, 'bear-throw elk-throw salmon-throw hawk-throw fox-throw');
+			// 	}
+			// 	mesh.setEnabled(false);
+			// } else if (mesh.id.includes('wipe')) {
+			// 	Tags.AddTagsTo(mesh, 'popup');
+			// 	if (mesh.id.includes('bear')) {
+			// 		Tags.AddTagsTo(mesh, 'bear-wipe');
+			// 	} else if (mesh.id.includes('elk')) {
+			// 		Tags.AddTagsTo(mesh, 'elk-wipe');
+			// 	} else if (mesh.id.includes('salmon')) {
+			// 		Tags.AddTagsTo(mesh, 'salmon-wipe');
+			// 	} else if (mesh.id.includes('hawk')) {
+			// 		Tags.AddTagsTo(mesh, 'hawk-wipe');
+			// 	} else if (mesh.id.includes('fox')) {
+			// 		Tags.AddTagsTo(mesh, 'fox-wipe');
+			// 	} else {
+			// 		Tags.AddTagsTo(mesh, 'bear-wipe elk-wipe salmon-wipe hawk-wipe fox-wipe');
+			// 	}
+			// 	mesh.setEnabled(false);
+			// } else if (mesh.id.includes('action')) {
+			// 	Tags.AddTagsTo(mesh, 'action');
+			// 	mesh.setEnabled(false);
+			// }
 		});
+
+		// this.scene.materials.forEach((mat) => {
+		// 	console.log(mat.id);
+		// 	console.log(mat.name);
+		// });
+		// this.scene.meshes.forEach((mesh) => {
+		// 	console.log(mesh);
+		// });
 
 		// this.scene.getMeshesByTags('salmon-wipe').forEach((mesh) => {
 		// 	mesh.visibility = 1;
 		// });
+		this.test();
 	}
 
-	testMoveCam() {
-		const text = this.scene.getMeshById('bear-throw')!;
-		const cancel = this.scene.getMeshById('bear-throw-cancel')!;
-
-		const confirm = this.scene.getMeshById('bear-throw-confirm')!;
-		cancel.visibility = 1;
-		confirm.visibility = 1;
-		text.visibility = 1;
-		const camera = this.scene.getCameraByName('camera') as ArcRotateCamera;
-		const originCameraPosition = camera.position;
-		const originCameraTarget = camera.target;
-
-		camera.setPosition(originCameraPosition.add(new Vector3(100, 20, 100)));
-		camera.setTarget(originCameraTarget.add(new Vector3(100, 0, 100)));
-
-		this.scene.onPointerObservable.add((pointerInfo) => {
-			if (pointerInfo.type == PointerEventTypes.POINTERDOWN) {
-				const boardRay = this.scene.createPickingRay(
-					this.scene.pointerX,
-					this.scene.pointerY,
-					Matrix.Identity(),
-					this.scene.getCameraByName('camera')
-				);
-				const camera = this.scene.getCameraByName('camera') as ArcRotateCamera;
-
-				const hitAction = this.scene.pickWithRay(boardRay, (mesh) => {
-					return (
-						mesh &&
-						(mesh?.id == 'bear-throw-cancel' || mesh?.id == 'bear-throw-confirm')
-					);
-				});
-
-				if (hitAction?.hit && hitAction.pickedMesh) {
-					camera.setPosition(new Vector3(0, 16, 0));
-					camera.setTarget(Vector3.Zero());
-				}
-			}
-		});
+	test() {
+		this.scene.actionManager = new ActionManager(this.scene);
+		this.scene.actionManager.registerAction(
+			new ExecuteCodeAction(ActionManager.OnPickDownTrigger, async (_evt) => {})
+		);
 	}
+
+	// testMoveCam() {
+	// 	const text = this.scene.getMeshById('bear-throw')!;
+	// 	const cancel = this.scene.getMeshById('bear-throw-cancel')!;
+
+	// 	const confirm = this.scene.getMeshById('bear-throw-confirm')!;
+	// 	cancel.visibility = 1;
+	// 	confirm.visibility = 1;
+	// 	text.visibility = 1;
+	// 	const camera = this.scene.getCameraByName('camera') as ArcRotateCamera;
+	// 	const originCameraPosition = camera.position;
+	// 	const originCameraTarget = camera.target;
+
+	// 	camera.setPosition(originCameraPosition.add(new Vector3(100, 20, 100)));
+	// 	camera.setTarget(originCameraTarget.add(new Vector3(100, 0, 100)));
+
+	// 	this.scene.onPointerObservable.add((pointerInfo) => {
+	// 		if (pointerInfo.type == PointerEventTypes.POINTERDOWN) {
+	// 			const boardRay = this.scene.createPickingRay(
+	// 				this.scene.pointerX,
+	// 				this.scene.pointerY,
+	// 				Matrix.Identity(),
+	// 				this.scene.getCameraByName('camera')
+	// 			);
+	// 			const camera = this.scene.getCameraByName('camera') as ArcRotateCamera;
+
+	// 			const hitAction = this.scene.pickWithRay(boardRay, (mesh) => {
+	// 				return (
+	// 					mesh &&
+	// 					(mesh?.id == 'bear-throw-cancel' || mesh?.id == 'bear-throw-confirm')
+	// 				);
+	// 			});
+
+	// 			if (hitAction?.hit && hitAction.pickedMesh) {
+	// 				camera.setPosition(new Vector3(0, 16, 0));
+	// 				camera.setTarget(Vector3.Zero());
+	// 			}
+	// 		}
+	// 	});
+	// }
 }
 
 new App();

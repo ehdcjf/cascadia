@@ -77,3 +77,11 @@ export function getRotationIndex(rotation: number) {
 	const sign = Math.sign(rotation) != -1 ? 'positive' : 'negative';
 	return rotationIndexes[sign].indexOf(rotation);
 }
+
+export async function sleep(ms: number) {
+	return new Promise<void>((resolve) => {
+		setTimeout(() => {
+			resolve();
+		}, ms);
+	});
+}

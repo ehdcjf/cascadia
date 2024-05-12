@@ -1,30 +1,43 @@
-import { Color3, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
-import { Tile, TileInfo } from './interfaces';
+import { Color3, Mesh, Scene, Tags, Tools, TransformNode, Vector3, VertexBuffer } from '@babylonjs/core';
+import { Habitat, Tile, TileInfo, TileKey } from './interfaces';
 import {
 	getHabitatSides,
 	getNeighborTileIDs,
 	getNeighborTileIDsByQRS,
 	qrsFromTileID,
+	sleep,
 	tileIDFromQRS,
 	tileVectorFromQRS,
 } from './utils';
 import { startingTiles } from './data';
+import { UVData } from './assets';
 
 export class Board {
 	public mapData = new Map<string, Tile>();
 	public readonly anchor: TransformNode;
 
-	constructor(private scene: Scene) {
+	constructor(private scene: Scene, private uvData: UVData) {
 		this.anchor = new TransformNode('board-anchor', this.scene);
 		this.init();
 	}
 
-	private init() {
+	private async init() {
 		// blank 채우기
-		const blank = this.scene.getMeshById('blank')!;
-		blank.overlayColor = Color3.Yellow();
-		blank.overlayAlpha = 0.3;
-		blank.setEnabled(true);
+		const tile = this.scene.getMeshById('tile')!;
+
+		tile.overlayColor = Color3.Yellow();
+		tile.overlayAlpha = 0.3;
+		// tile.setEnabled(true);
+
+		const token = this.scene.getMeshById('token')!;
+		const tokenPosistion = [
+			new Vector3(0, 0.11, 0),
+			new Vector3(-0.15, 0.11, 0.15),
+			new Vector3(0.15, 0.11, -0.15),
+			new Vector3(0, 0.11, -0.25),
+			new Vector3(-0.25 * Math.cos(Math.PI / 6), 0.11, 0.125),
+			new Vector3(0.25 * Math.cos(Math.PI / 6), 0.11, 0.125),
+		];
 
 		const N = 20;
 		for (let q = -N; q <= N; q++) {
@@ -34,10 +47,24 @@ export class Board {
 				const s = -q - r;
 				const tileID = tileIDFromQRS(q, r, s);
 
-				const tileMesh = blank.clone(tileID, this.anchor)!;
+				const blank = tile.clone(tileID, this.anchor)! as Mesh;
+				blank.makeGeometryUnique();
+				const tileAnchor = new TransformNode(tileID, this.scene);
+				tileAnchor.parent = blank;
 
-				tileMesh.position = tileVectorFromQRS(q, r);
-				tileMesh.visibility = 1;
+				tokenPosistion.forEach((pos, i) => {
+					const emptyToken = token.clone(tileID + `[${i}]`, tileAnchor) as Mesh;
+					emptyToken.makeGeometryUnique();
+					emptyToken.position = pos;
+					emptyToken.scaling = new Vector3(0.4, 0.1, 0.4);
+					emptyToken.visibility = 1;
+					emptyToken.setEnabled(false);
+				});
+
+				// blank.bakeCurrentTransformIntoVertices();
+				blank.setVerticesData(this.uvData.tileIndex, this.uvData.tile['blank']);
+				blank.position = tileVectorFromQRS(q, r);
+				// blank.visibility = 1;
 				// tileMesh.renderOutline = true;
 				// tileMesh.outlineColor = new Color3(0, 0, 0);
 				// tileMesh.outlineWidth = 0;
@@ -47,64 +74,50 @@ export class Board {
 		// stating tile
 		const startingTileID = Math.floor(Math.random() * 5);
 		const startingTile = startingTiles[startingTileID];
-		[
+		const startingPosition = [
 			[0, 0, 0],
 			[0, 1, -1],
 			[-1, 1, 0],
-		].forEach(([q, r, s], i) => {
+		];
+		for (let i = 0; i < 3; i++) {
+			const [q, r, s] = startingPosition[i];
 			const thisStartingTile = startingTile[i];
 			const targetTileID = tileIDFromQRS(q, r, s);
 			this.drawHabitat(thisStartingTile, targetTileID, thisStartingTile.rotation);
 			this.setTile(thisStartingTile, targetTileID, thisStartingTile.rotation);
-		});
+		}
+
 		this.drawPossibleBlnk();
 	}
 
 	drawHabitat(tileInfo: TileInfo, tileID: string, rotation = 0) {
 		// UI
-		const targetTileMesh = this.scene.getMeshByName(tileID)!;
+		const tile = this.scene.getMeshByName(tileID)!;
+		tile.visibility = 1;
+		const habitatName = tileInfo.habitats.join('-') as TileKey;
 
-		const habitatName = tileInfo.habitats.join('-');
 		/**
+		 * 일부 타일이 z-index가 낮아지는 현상
 		 * Z-fighting
 		 * 재질의 광원 반응 조정
 		 * 투명도 및 반사
+		 * =>>>> rendering group 때문임.
 		 */
-		const newMaterial = this.scene.getMeshById(habitatName)!.material!;
-		targetTileMesh.material = newMaterial;
-		targetTileMesh.rotation = new Vector3(0, Tools.ToRadians(rotation), 0);
 
-		const anchor =
-			targetTileMesh.getChildTransformNodes()[0] ?? new TransformNode(`tile-anchor`, this.scene);
-		if (anchor.getChildMeshes().length == 0) {
-			const wildlifeMesh = tileInfo.wildlife.map((wildlife) => {
-				const meshID = wildlife + '-plane';
-				const planeMesh = this.scene.getMeshById(meshID)!.clone('wildlife', anchor)!;
-				planeMesh.position.y += 0.11;
-				planeMesh.visibility = 1;
-				return planeMesh;
-			});
+		tile.setVerticesData(this.uvData.tileIndex, this.uvData.tile[habitatName]);
 
-			if (wildlifeMesh.length == 2) {
-				wildlifeMesh[0].position.x -= 0.15;
-				wildlifeMesh[0].position.z += 0.15;
-				wildlifeMesh[1].position.x += 0.15;
-				wildlifeMesh[1].position.z -= 0.15;
-			} else if (wildlifeMesh.length == 3) {
-				wildlifeMesh[0].position.z -= 0.25;
-				wildlifeMesh[1].position.z += 0.125;
-				wildlifeMesh[1].position.x -= 0.25 * Math.cos(Math.PI / 6);
-				wildlifeMesh[2].position.x += 0.25 * Math.cos(Math.PI / 6);
-				wildlifeMesh[2].position.z += 0.125;
-			}
-			anchor.parent = targetTileMesh;
-		}
-		anchor.rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
+		tile.rotation = new Vector3(0, Tools.ToRadians(rotation), 0);
 
-		targetTileMesh.renderingGroupId = 0;
-		targetTileMesh.getChildMeshes().forEach((mesh) => {
-			mesh.renderingGroupId = 0;
+		const wildLifeSize = tileInfo.wildlife.length;
+		const startIndex = (1 << (wildLifeSize - 1)) - 1;
+
+		const wildLifeMeshes = tile.getChildMeshes();
+		wildLifeMeshes.forEach((mesh) => mesh.setEnabled(false));
+		tileInfo.wildlife.forEach((v, i) => {
+			wildLifeMeshes[startIndex + i].setVerticesData(this.uvData.tokenIndex, this.uvData.token[v]);
+			wildLifeMeshes[startIndex + i].setEnabled(true);
 		});
+		tile.getChildTransformNodes()[0].rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
 	}
 
 	public setTile(tileInfo: TileInfo, tileID: string, rotation: number) {
@@ -135,7 +148,10 @@ export class Board {
 
 		for (const tileID of possible) {
 			// this.scene.getMeshByName(tileID)!.material = potentialMat;
-			this.scene.getMeshByName(tileID)!.renderOverlay = true;
+			const neighbor = this.scene.getMeshByName(tileID)!;
+			neighbor.visibility = 1;
+			neighbor.setVerticesData(this.uvData.tileIndex, this.uvData.tile['blank']);
+			// neighbor.renderOverlay = true;
 		}
 	}
 }

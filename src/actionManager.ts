@@ -32,10 +32,9 @@ export class CascadiaActionManager {
 	private pendings: Record<string, any> = {};
 
 	constructor(private scene: Scene, private board: Board, private pocket: Pocket) {
-		this.setTileActionButtons();
-		this.setPointerDownEvent();
-		this.setPointerMoveEvent();
-
+		// this.setTileActionButtons();
+		// this.setPointerDownEvent();
+		// this.setPointerMoveEvent();
 		// this.scene.onBeforeRenderObservable.add(() => {
 		// 	this.scene.meshes.forEach((mesh) => {
 		// 		if (mesh.renderingGroupId == 0) {
@@ -209,6 +208,8 @@ export class CascadiaActionManager {
 	}
 
 	private setPointerDownEvent() {
+		console.log(this.scene.actionManager);
+
 		this.scene.onPointerDown = (_evt, _pickInfo) => {
 			const ray = this.scene.createPickingRay(
 				this.scene.pointerX,

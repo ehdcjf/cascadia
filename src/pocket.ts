@@ -15,6 +15,7 @@ import {
 import { TileInfo, WildLife } from './interfaces';
 import { tiles } from '../src2/data';
 import { setVisibility, sleep } from './utils';
+import { MaterialManager } from './material';
 const positionY = [-3, -1, 1, 3, 5];
 export class Pocket {
 	allTokens: WildLife[] = [];
@@ -24,7 +25,7 @@ export class Pocket {
 	tiles: (TileInfo | null)[] = [];
 	hl: HighlightLayer;
 
-	constructor(protected scene: Scene) {
+	constructor(protected scene: Scene, private mat: MaterialManager) {
 		this.anchor = new TransformNode('pocket-anchor', this.scene);
 		this.anchor.position = new Vector3(100, 100, 100);
 		this.hl = new HighlightLayer('hl1', scene);
@@ -33,65 +34,7 @@ export class Pocket {
 		this.setupTokens();
 		this.refillTokens();
 		this.refillTiles();
-		// for (let i = 0; i < 4; i++) {
-		// 	this.tiles.push(this.allTiles.pop()!);
-		// }
-
-		// this.tiles.forEach((tileInfo, i) => {
-		// 	const habitatName = tileInfo!.habitats.join('-');
-		// 	const tileMesh = this.scene.getMeshById(habitatName)!.clone(`tile${i}`, this.anchor)!;
-		// 	Tags.EnableFor(tileMesh);
-		// 	Tags.AddTagsTo(tileMesh, `tile tile${i}`);
-		// 	tileMesh.id = 'tile';
-		// 	tileMesh.visibility = 1;
-		// 	tileMesh.position.y += (i - 1.5) * 2;
-		// 	tileMesh.position.x += 0.5;
-		// 	tileMesh.metadata = tileInfo;
-
-		// 	tileMesh.rotation = new Vector3(Tools.ToRadians(90), Tools.ToRadians(tileInfo!.rotation), 0);
-		// 	tileMesh.scaling = new Vector3(0.7, 0.7, 0.7);
-		// 	tileMesh.renderOutline = true;
-		// 	tileMesh.outlineColor = new Color3(0, 0, 0);
-		// 	tileMesh.outlineWidth = 0;
-		// 	tileMesh.renderOverlay = true;
-		// 	tileMesh.overlayColor = Color3.Gray();
-		// 	tileMesh.overlayAlpha = 0.5;
-
-		// 	const wildlifeAnchor = new TransformNode(`tile${i}-anchor`, this.scene);
-		// 	const wildlife = tileInfo!.wildlife.map((anim) => {
-		// 		const meshName = anim + '-plane';
-		// 		const planeMash = this.scene.getMeshById(meshName)!.clone(`wildlife`, wildlifeAnchor)!;
-		// 		Tags.EnableFor(planeMash);
-		// 		Tags.AddTagsTo(planeMash, `tile tile${i} wildlife`);
-		// 		planeMash.overlayColor = Color3.Gray();
-		// 		planeMash.overlayAlpha = 0.5;
-		// 		planeMash.position.y += 0.11;
-		// 		// planeMash.rotation = new Vector3(0, -Tools.ToRadians(thisStartingTile.rotation), 0);
-		// 		planeMash.visibility = 1;
-		// 		return planeMash;
-		// 	});
-
-		// 	wildlifeAnchor.parent = tileMesh;
-		// 	wildlifeAnchor.rotation = new Vector3(0, -Tools.ToRadians(tileInfo!.rotation), 0);
-
-		// 	if (wildlife.length == 2) {
-		// 		wildlife[0].position.x += 0.12;
-		// 		wildlife[0].position.z += 0.12;
-		// 		wildlife[1].position.x -= 0.12;
-		// 		wildlife[1].position.z -= 0.12;
-		// 	} else if (wildlife.length == 3) {
-		// 		wildlife[0].position.z -= 0.2;
-		// 		wildlife[1].position.z += 0.1;
-		// 		wildlife[1].position.x -= 0.2 * Math.cos(Math.PI / 6);
-		// 		wildlife[2].position.x += 0.2 * Math.cos(Math.PI / 6);
-		// 		wildlife[2].position.z += 0.1;
-		// 	}
-		// });
 	}
-
-	protected pushTile() {}
-
-	protected pushToken() {}
 
 	protected setupTokens() {
 		const tokenNums: Record<WildLife, number> = {
@@ -219,7 +162,7 @@ export class Pocket {
 	}
 
 	public refillTokens() {
-		const aliveTokens = this.scene.getMeshesById('token');
+		const aliveTokens = this.scene.getMeshByName('token');
 		const tokens = aliveTokens.sort((a, b) => this.numFromName(a.name) - this.numFromName(b.name));
 		while (tokens.length < 4) {
 			tokens.push(this.popToken());
@@ -256,6 +199,7 @@ export class Pocket {
 		return token;
 	}
 
+	//FIXME: board에 만든거로 수정
 	private popTile() {
 		const tileInfo = this.allTiles.pop()!;
 		const habitatName = tileInfo!.habitats.join('-');

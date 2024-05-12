@@ -16,6 +16,10 @@ import {
 	TransformNode,
 	ActionManager,
 	ExecuteCodeAction,
+	Color3,
+	HighlightLayer,
+	Mesh,
+	VertexBuffer,
 } from '@babylonjs/core';
 
 import * as BABYLON from '@babylonjs/core';
@@ -23,6 +27,8 @@ import { Board } from './board';
 import { Pocket } from './pocket';
 import { Actions } from './action';
 import { Inspector } from '@babylonjs/inspector';
+import { TileGenerator } from './assets/tile';
+import { UVData } from './assets';
 (window as any).BABYLON = BABYLON;
 
 // const H = 1.5;
@@ -47,9 +53,12 @@ class App {
 
 		await this.createScene();
 		this.createBoardCam();
-		this.board = new Board(this.scene);
-		this.pocket = new Pocket(this.scene);
-		this.actions = new Actions(this.scene, this.board, this.pocket);
+		const uvData = new UVData(this.scene);
+		const board = new Board(this.scene, uvData);
+
+		// this.board = new Board(this.scene);
+		// this.pocket = new Pocket(this.scene);
+		// this.actions = new Actions(this.scene, this.board, this.pocket);
 
 		this.engine.runRenderLoop(() => {
 			if (this.scene) this.scene.render();
@@ -84,6 +93,7 @@ class App {
 
 		Inspector.Show(this.scene, {});
 		await this.loadAssetAsync();
+
 		await this.scene.whenReadyAsync();
 		this.engine.hideLoadingUI();
 	}
@@ -99,7 +109,7 @@ class App {
 		);
 		this.boardCam.upperBetaLimit = Tools.ToRadians(80);
 		this.boardCam.wheelPrecision = 5;
-		this.boardCam.lowerRadiusLimit = 10;
+		this.boardCam.lowerRadiusLimit = 5;
 		this.boardCam.upperRadiusLimit = 80;
 		this.boardCam.attachControl(true);
 		this.boardCam.viewport = new Viewport(0.2, 0, 0.8, 1);
@@ -161,11 +171,13 @@ class App {
 	}
 
 	private async loadAssetAsync() {
-		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia6.glb', this.scene);
+		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia10.glb', this.scene);
+
 		assets.meshes.forEach((mesh, _i) => {
+			console.log(mesh.id);
+			mesh.visibility = 0;
 			mesh.renderingGroupId = 3;
 			// mesh.setEnabled(false);
-			mesh.visibility = 0;
 			// mesh.visibility = 0;
 			// if (mesh.id.includes('throw')) {
 			// 	mesh.visibility = 1;
