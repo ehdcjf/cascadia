@@ -1,4 +1,13 @@
-import { AbstractMesh, ActionManager, Color3, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import {
+	AbstractMesh,
+	ActionManager,
+	Color3,
+	Scene,
+	StandardMaterial,
+	Tools,
+	TransformNode,
+	Vector3,
+} from '@babylonjs/core';
 import { startingTiles } from '../src2/data';
 import { Habitat, Tile, TileInfo, TileKey, TokenKey, WildLife } from './interfaces';
 import { TileScoring } from './score/tile';
@@ -32,6 +41,14 @@ export class Board {
 		tile.outlineWidth = 0.00001;
 		tile.renderOutline = true;
 		const token = this.scene.getMeshByName('token')!;
+
+		// const tileWrapper = this.scene.getMeshByName('tile-wrapper')!;
+		// const redMat = new StandardMaterial('red-mat', this.scene);
+		// redMat.diffuseColor = new Color3(1, 1, 0);
+		// redMat.specularColor = new Color3(0, 0, 0);
+		// tileWrapper.material = redMat;
+		// tileWrapper.visibility = 1;
+		// return;
 
 		token.setEnabled(false);
 
@@ -78,14 +95,8 @@ export class Board {
 			const thisStartingTile = startingTile[i];
 			const targetTileID = this.tileIDFromQRS(q, r, s);
 			this.drawHabitat(thisStartingTile, targetTileID, thisStartingTile.rotation);
-
 			this.setTile(thisStartingTile, targetTileID, thisStartingTile.rotation);
 		});
-
-		const firstTile = this.scene.getMeshByName('tile[0][0][0]')!;
-		firstTile.actionManager = new ActionManager(this.scene);
-		firstTile.actionManager.registerAction(this.action);
-		console.log(firstTile.actionManager);
 	}
 
 	resetPossiblePathMaterial() {
@@ -131,8 +142,12 @@ export class Board {
 
 	public drawPossiblePaths(tileID: string) {
 		this.getNeighborTileIDs(tileID).forEach((neighborTileID) => {
-			const neighbor = this.scene.getMeshByName(neighborTileID)!;
-			neighbor.renderOverlay = true;
+			if (!this.mapData.has(neighborTileID)) {
+				const neighbor = this.scene.getMeshByName(neighborTileID)!;
+				neighbor.renderOverlay = true;
+			} else {
+				console.log(neighborTileID);
+			}
 			// neighborMesh.renderingGroupId = 0;
 		});
 	}
