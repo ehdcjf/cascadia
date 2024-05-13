@@ -1,9 +1,22 @@
-import { AbstractMesh, Color3, Material, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import {
+	AbstractMesh,
+	Color3,
+	Material,
+	Scene,
+	StandardMaterial,
+	Tools,
+	TransformNode,
+	Vector3,
+} from '@babylonjs/core';
 import { TileInfo, TileKey as TileMatKey, TokenKey as TokenMatKey, WildLife } from './interfaces';
 
 export class Assets {
 	public readonly tileMat: Record<TileMatKey, Material> = {} as Record<TileMatKey, Material>;
 	public readonly tokenMat: Record<TokenMatKey, Material> = {} as Record<TokenMatKey, Material>;
+	public readonly tokenEdgeMat: Record<'red' | 'yellow' | 'none', Material> = {} as Record<
+		'red' | 'yellow' | 'none',
+		Material
+	>;
 	// private readonly token: AbstractMesh;
 	private readonly tile: AbstractMesh;
 	private readonly token: AbstractMesh;
@@ -12,25 +25,23 @@ export class Assets {
 		tile.id = 'tile-origin';
 		const token = scene.getMeshById('token')!;
 		token.id = 'token-origin';
-		// tile.overlayAlpha = 0.3;
-		// tile.overlayColor = Color3.Yellow();
 		tile.outlineColor = Color3.Black();
 		tile.outlineWidth = 0.00001;
 		tile.renderOutline = true;
 		const tokenPosistion = [
 			new Vector3(0, 0.11, 0),
-			new Vector3(-0.15, 0.11, 0.15),
-			new Vector3(0.15, 0.11, -0.15),
-			new Vector3(0, 0.11, -0.25),
-			new Vector3(-0.25 * Math.cos(Math.PI / 6), 0.11, 0.125),
-			new Vector3(0.25 * Math.cos(Math.PI / 6), 0.11, 0.125),
+			new Vector3(-0.2, 0.11, 0.2),
+			new Vector3(0.2, 0.11, -0.2),
+			new Vector3(0, 0.11, -0.3),
+			new Vector3(-0.3 * Math.cos(Math.PI / 6), 0.11, 0.15),
+			new Vector3(0.3 * Math.cos(Math.PI / 6), 0.11, 0.15),
 		];
 		const tileAnchor = new TransformNode('tile-anchor', scene);
 		tileAnchor.parent = tile;
 		tokenPosistion.forEach((pos, i) => {
 			const emptyToken = token.clone(`plane`, tileAnchor)!;
 			emptyToken.position = pos;
-			emptyToken.scaling = new Vector3(0.4, 0.1, 0.4);
+			emptyToken.scaling = new Vector3(0.5, 0.1, 0.5);
 		});
 
 		this.tile = tile;
@@ -82,6 +93,21 @@ export class Assets {
 		).forEach((name) => {
 			this.tokenMat[name] = scene.getMaterialByName(name)!;
 		});
+
+		const redMat = new StandardMaterial('red-edge');
+		redMat.diffuseColor = Color3.Red();
+
+		const yellowMat = new StandardMaterial('yellow-edge');
+		yellowMat.diffuseColor = Color3.Yellow();
+
+		const noneMat = new StandardMaterial('none-edge');
+		noneMat.alpha = 0;
+
+		this.tokenEdgeMat = {
+			red: redMat,
+			yellow: yellowMat,
+			none: noneMat,
+		};
 	}
 
 	cloneTile(

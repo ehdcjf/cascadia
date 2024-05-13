@@ -23,7 +23,7 @@ import {
 import * as BABYLON from '@babylonjs/core';
 import { Board } from './board';
 import { Pocket } from './pocket';
-import { CascadiaActionManager } from './actionManager';
+import { CascadiaActionManager } from './action';
 import { Inspector } from '@babylonjs/inspector';
 import { Assets } from './assets';
 (window as any).BABYLON = BABYLON;
@@ -36,8 +36,7 @@ class App {
 	private engine!: Engine;
 	private board!: Board;
 	private pocket!: Pocket;
-	tilaAction!: CascadiaActionManager;
-	num = 10;
+	private action!: CascadiaActionManager;
 	constructor() {
 		this.init();
 	}
@@ -48,26 +47,10 @@ class App {
 
 		await this.createScene();
 
-		const actionManager = new ActionManager(this.scene);
-
-		// const someAction = new ExecuteCodeAction(
-		// 	ActionManager.OnPickDownTrigger,
-		// 	(_evt) => {
-		// 		this.num++;
-		// 		console.log(this.num);
-		// 		console.log('xxxxxx');
-		// 		console.log(_evt.additionalData.pickedMesh.name);
-		// 		console.log(_evt.meshUnderPointer!.name);
-		// 		console.log(this);
-		// 	},
-		// 	new PredicateCondition(actionManager, () => this.num < 20)
-		// );
-
-		// someAction.setTriggerParameter(this);
 		const assets = new Assets(this.scene);
 		this.board = new Board(this.scene, assets);
 		this.pocket = new Pocket(this.scene, assets);
-		// this.tilaAction = new CascadiaActionManager(this.scene, this.board, this.pocket);
+		this.action = new CascadiaActionManager(this.scene, this.board, this.pocket);
 
 		this.engine.runRenderLoop(() => {
 			if (this.scene) this.scene.render();

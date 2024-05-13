@@ -1,29 +1,17 @@
-import {
-	Color3,
-	Matrix,
-	Scene,
-	Tags,
-	Tools,
-	TransformNode,
-	Vector3,
-	Animation,
-	GlowLayer,
-	Mesh,
-	HighlightLayer,
-	AbstractMesh,
-	StandardMaterial,
-} from '@babylonjs/core';
-import { TileInfo, TileKey, WildLife } from './interfaces';
-import { tiles } from '../src2/data';
-import { setVisibility, sleep } from './utils';
+import { Scene, Tools, TransformNode, Vector3, Animation, AbstractMesh } from '@babylonjs/core';
+import { TileInfo, WildLife } from './interfaces';
+import { tiles } from './data';
+import { numFromName, sleep } from './utils';
 import { Assets } from './assets';
 const positionY = [-3, -1, 1, 3, 5];
+
 export class Pocket {
 	allTokens: WildLife[] = [];
 	allTiles: TileInfo[] = [];
 	anchor: TransformNode;
 	tokens: (WildLife | null)[] = [];
 	tiles: (TileInfo | null)[] = [];
+	tileEdges: AbstractMesh[] = [];
 
 	constructor(protected scene: Scene, private assets: Assets) {
 		this.anchor = new TransformNode('pocket-anchor', this.scene);
@@ -37,23 +25,26 @@ export class Pocket {
 	}
 	private setTileEdge() {
 		positionY.forEach((y, i) => {
-			const tileEdge = this.scene.getMeshById('tile-wrapper')!.clone('edge' + i, this.anchor)!;
+			const tileEdge = this.scene.getMeshById('tile-edge')!.clone('edge' + i, this.anchor)!;
+			tileEdge.id = 'edge';
 			tileEdge.position = new Vector3(0.5, y, 0);
 			tileEdge.scaling = new Vector3(0.7, 0.7, 0.7);
 			tileEdge.rotation = new Vector3(Tools.ToRadians(90), 0, 0);
-			const mat = new StandardMaterial('edge-mat');
-			mat.diffuseColor = Color3.Red();
-			tileEdge.material = mat;
-			tileEdge.material.alpha = 0;
+			tileEdge.material = this.assets.tokenEdgeMat['none'];
 			tileEdge.setEnabled(true);
+			this.tileEdges.push(tileEdge);
 		});
 	}
 
-	private cleanEdge(index: number) {
-		this.scene.getMeshByName('edge' + index)!.material!.alpha = 0;
+	public cleanEdge() {
+		this.scene.getMeshesById('edge').forEach((mesh) => {
+			mesh.material = this.assets.tokenEdgeMat['none'];
+		});
 	}
 
-	private paintWrapper(index: number, color: 'red' | 'yellow' | '') {}
+	public paintEdge(index: number, color: 'red' | 'yellow' | 'none') {
+		this.scene.getMeshByName('edge' + index)!.material = this.assets.tokenEdgeMat[color];
+	}
 
 	protected setupTokens() {
 		const tokenNums: Record<WildLife, number> = {
@@ -124,75 +115,23 @@ export class Pocket {
 	}
 
 	public async discardFurthest() {
-		const tileIndex = this.scene
+		const furthestTileIndex = this.scene
 			.getMeshesById('tile')
-			.map((v) => this.numFromName(v.name))
+			.map((v) => numFromName(v.name))
 			.sort((a, b) => a - b)[0];
-		const tokenIndex = this.scene
+		const furthestTokenIndex = this.scene
 			.getMeshesById('token')
-			.map((v) => this.numFromName(v.name))
+			.map((v) => numFromName(v.name))
 			.sort((a, b) => a - b)[0];
 
 		await Promise.all([
-			this.deleteTile.call(this, tileIndex, 'left'),
-			this.deleteToken.call(this, tokenIndex, 'left'),
+			this.deleteTile.call(this, furthestTileIndex, 'left'),
+			this.deleteToken.call(this, furthestTokenIndex, 'left'),
 		]);
 		await sleep(400);
 		this.refillTokens();
 		this.refillTiles();
 		// await Promise.all([this.refillTiles(), this.refillTokens()]);
-	}
-
-	private refillTiles() {
-		const aliveTiles = this.scene.getMeshesById('tile');
-		const tiles = aliveTiles.sort((a, b) => this.numFromName(a.name) - this.numFromName(b.name));
-		while (tiles.length < 4) {
-			tiles.push(this.popTile());
-		}
-		tiles.forEach(async (tile, dest) => {
-			const src = this.numFromName(tile.name);
-			const startY = positionY[src];
-			const endY = positionY[dest];
-
-			await Animation.CreateAndStartAnimation(
-				'refillTile',
-				tile,
-				'position.y',
-				60,
-				50,
-				startY,
-				endY,
-				Animation.ANIMATIONLOOPMODE_CONSTANT
-			)!.waitAsync();
-
-			tile.name = 'tile' + dest;
-		});
-	}
-
-	public refillTokens() {
-		const aliveTokens = this.scene.getMeshesById('token')!;
-		const tokens = aliveTokens.sort((a, b) => this.numFromName(a.name) - this.numFromName(b.name));
-
-		while (tokens.length < 4) {
-			tokens.push(this.popToken());
-		}
-
-		tokens.forEach(async (token, dest) => {
-			const src = this.numFromName(token.name);
-			const startY = positionY[src];
-			const endY = positionY[dest];
-			await Animation.CreateAndStartAnimation(
-				'refillToken',
-				token,
-				'position.y',
-				60,
-				50,
-				startY,
-				endY,
-				Animation.ANIMATIONLOOPMODE_CONSTANT
-			)!.waitAsync();
-			token.name = 'token' + dest;
-		});
 	}
 
 	private popToken() {
@@ -217,11 +156,55 @@ export class Pocket {
 		return tile;
 	}
 
-	public numFromName(tags: string) {
-		console.log(tags);
-		const regex = /(\d)$/;
-		const match = tags.match(regex)!;
-		console.log(match);
-		return +match[1];
+	private refillTiles() {
+		const aliveTiles = this.scene.getMeshesById('tile');
+		const tiles = aliveTiles.sort((a, b) => numFromName(a.name) - numFromName(b.name));
+		while (tiles.length < 4) {
+			tiles.push(this.popTile());
+		}
+		tiles.forEach(async (tile, dest) => {
+			const src = numFromName(tile.name);
+			const startY = positionY[src];
+			const endY = positionY[dest];
+
+			await Animation.CreateAndStartAnimation(
+				'refillTile',
+				tile,
+				'position.y',
+				60,
+				50,
+				startY,
+				endY,
+				Animation.ANIMATIONLOOPMODE_CONSTANT
+			)!.waitAsync();
+
+			tile.name = 'tile' + dest;
+		});
+	}
+
+	public refillTokens() {
+		const aliveTokens = this.scene.getMeshesById('token')!;
+		const tokens = aliveTokens.sort((a, b) => numFromName(a.name) - numFromName(b.name));
+
+		while (tokens.length < 4) {
+			tokens.push(this.popToken());
+		}
+
+		tokens.forEach(async (token, dest) => {
+			const src = numFromName(token.name);
+			const startY = positionY[src];
+			const endY = positionY[dest];
+			await Animation.CreateAndStartAnimation(
+				'refillToken',
+				token,
+				'position.y',
+				60,
+				50,
+				startY,
+				endY,
+				Animation.ANIMATIONLOOPMODE_CONSTANT
+			)!.waitAsync();
+			token.name = 'token' + dest;
+		});
 	}
 }
