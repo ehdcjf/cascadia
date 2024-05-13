@@ -11,11 +11,12 @@ import {
 	Mesh,
 	HighlightLayer,
 	AbstractMesh,
+	StandardMaterial,
 } from '@babylonjs/core';
-import { TileInfo, WildLife } from './interfaces';
+import { TileInfo, TileKey, WildLife } from './interfaces';
 import { tiles } from '../src2/data';
 import { setVisibility, sleep } from './utils';
-import { MaterialManager } from './material';
+import { Assets } from './assets';
 const positionY = [-3, -1, 1, 3, 5];
 export class Pocket {
 	allTokens: WildLife[] = [];
@@ -23,18 +24,36 @@ export class Pocket {
 	anchor: TransformNode;
 	tokens: (WildLife | null)[] = [];
 	tiles: (TileInfo | null)[] = [];
-	hl: HighlightLayer;
 
-	constructor(protected scene: Scene, private mat: MaterialManager) {
+	constructor(protected scene: Scene, private assets: Assets) {
 		this.anchor = new TransformNode('pocket-anchor', this.scene);
 		this.anchor.position = new Vector3(100, 100, 100);
-		this.hl = new HighlightLayer('hl1', scene);
 
 		this.setupTiles();
 		this.setupTokens();
 		this.refillTokens();
 		this.refillTiles();
+		this.setTileEdge();
 	}
+	private setTileEdge() {
+		positionY.forEach((y, i) => {
+			const tileEdge = this.scene.getMeshById('tile-wrapper')!.clone('edge' + i, this.anchor)!;
+			tileEdge.position = new Vector3(0.5, y, 0);
+			tileEdge.scaling = new Vector3(0.7, 0.7, 0.7);
+			tileEdge.rotation = new Vector3(Tools.ToRadians(90), 0, 0);
+			const mat = new StandardMaterial('edge-mat');
+			mat.diffuseColor = Color3.Red();
+			tileEdge.material = mat;
+			tileEdge.material.alpha = 0;
+			tileEdge.setEnabled(true);
+		});
+	}
+
+	private cleanEdge(index: number) {
+		this.scene.getMeshByName('edge' + index)!.material!.alpha = 0;
+	}
+
+	private paintWrapper(index: number, color: 'red' | 'yellow' | '') {}
 
 	protected setupTokens() {
 		const tokenNums: Record<WildLife, number> = {
@@ -66,17 +85,6 @@ export class Pocket {
 		}
 
 		return array;
-	}
-
-	public highlight(mesh: AbstractMesh) {
-		this.lowlight();
-		[mesh, ...mesh.getChildMeshes()].forEach((v) => {
-			this.hl.addMesh(v as Mesh, Color3.Green());
-		});
-	}
-
-	public lowlight() {
-		this.hl.removeAllMeshes();
 	}
 
 	public async deleteToken(index: number, dir: 'right' | 'left') {
@@ -162,11 +170,13 @@ export class Pocket {
 	}
 
 	public refillTokens() {
-		const aliveTokens = this.scene.getMeshByName('token');
+		const aliveTokens = this.scene.getMeshesById('token')!;
 		const tokens = aliveTokens.sort((a, b) => this.numFromName(a.name) - this.numFromName(b.name));
+
 		while (tokens.length < 4) {
 			tokens.push(this.popToken());
 		}
+
 		tokens.forEach(async (token, dest) => {
 			const src = this.numFromName(token.name);
 			const startY = positionY[src];
@@ -187,62 +197,31 @@ export class Pocket {
 
 	private popToken() {
 		const wildlife = this.allTokens.pop()!;
-		const tokenOrigin = this.scene.getMeshById(`${wildlife}-token`)!;
-		const token = tokenOrigin.clone('token4', this.anchor)!;
-		token.id = 'token';
-		token.visibility = 1;
-		token.position.y += (4 - 1.5) * 2;
-		token.position.x -= 1;
+
+		// const token = this.pocketToken.clone('token4', this.anchor)!;
+		const token = this.assets.cloneToken(this.anchor, 'token', 'token4', wildlife, new Vector3(-1, 5, 0));
 		token.metadata = wildlife;
 		token.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
 		token.scaling = new Vector3(0.6, 0.6, 0.6);
 		return token;
 	}
 
-	//FIXME: board에 만든거로 수정
 	private popTile() {
 		const tileInfo = this.allTiles.pop()!;
-		const habitatName = tileInfo!.habitats.join('-');
-		const tile = this.scene.getMeshById(habitatName)!.clone(`tile4`, this.anchor)!;
-		tile.id = 'tile';
-		tile.visibility = 1;
-		tile.position.y += (4 - 1.5) * 2;
-		tile.position.x += 0.5;
+
+		const tile = this.assets.cloneTile(this.anchor, 'tile', 'tile4', tileInfo, new Vector3(0.5, 5, 0));
 		tile.metadata = tileInfo;
 
-		tile.rotation = new Vector3(Tools.ToRadians(90), Tools.ToRadians(tileInfo!.rotation), 0);
+		tile.rotation = new Vector3(Tools.ToRadians(90), 0, 0);
 		tile.scaling = new Vector3(0.7, 0.7, 0.7);
-
-		const wildlifeAnchor = new TransformNode(`tile-anchor`, this.scene);
-		const wildlife = tileInfo!.wildlife.map((anim) => {
-			const meshName = anim + '-plane';
-			const planeMash = this.scene.getMeshById(meshName)!.clone(`wildlife`, wildlifeAnchor)!;
-			planeMash.position.y += 0.11;
-			planeMash.visibility = 1;
-			return planeMash;
-		});
-
-		wildlifeAnchor.parent = tile;
-		wildlifeAnchor.rotation = new Vector3(0, -Tools.ToRadians(tileInfo!.rotation), 0);
-
-		if (wildlife.length == 2) {
-			wildlife[0].position.x += 0.12;
-			wildlife[0].position.z += 0.12;
-			wildlife[1].position.x -= 0.12;
-			wildlife[1].position.z -= 0.12;
-		} else if (wildlife.length == 3) {
-			wildlife[0].position.z -= 0.2;
-			wildlife[1].position.z += 0.1;
-			wildlife[1].position.x -= 0.2 * Math.cos(Math.PI / 6);
-			wildlife[2].position.x += 0.2 * Math.cos(Math.PI / 6);
-			wildlife[2].position.z += 0.1;
-		}
 		return tile;
 	}
 
 	public numFromName(tags: string) {
+		console.log(tags);
 		const regex = /(\d)$/;
 		const match = tags.match(regex)!;
+		console.log(match);
 		return +match[1];
 	}
 }

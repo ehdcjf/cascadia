@@ -11,7 +11,7 @@ import {
 import { startingTiles } from '../src2/data';
 import { Habitat, Tile, TileInfo, TileKey, TokenKey, WildLife } from './interfaces';
 import { TileScoring } from './score/tile';
-import { MaterialManager } from './material';
+import { Assets } from './assets';
 const rotationIndexes = {
 	positive: [0, 60, 120, 180, 240, 300],
 	negative: [0, -300, -240, -180, -120, -60],
@@ -26,147 +26,65 @@ export class Board {
 	protected possiblePath: Map<string, AbstractMesh> = new Map();
 	public readonly anchor: TransformNode;
 
-	constructor(protected scene: Scene, private readonly material: MaterialManager, private action: any) {
+	constructor(protected scene: Scene, private readonly assets: Assets) {
 		this.anchor = new TransformNode('board-anchor', this.scene);
 		this.init();
 		// const x = new TileScoring(this.mapData);
 	}
 
 	private init() {
-		const N = 20;
-		const tile = this.scene.getMeshByName('tile')!;
-		tile.overlayAlpha = 0.3;
-		tile.overlayColor = Color3.Yellow();
-		tile.outlineColor = Color3.Black();
-		tile.outlineWidth = 0.00001;
-		tile.renderOutline = true;
-		const token = this.scene.getMeshByName('token')!;
-
-		// const tileWrapper = this.scene.getMeshByName('tile-wrapper')!;
-		// const redMat = new StandardMaterial('red-mat', this.scene);
-		// redMat.diffuseColor = new Color3(1, 1, 0);
-		// redMat.specularColor = new Color3(0, 0, 0);
-		// tileWrapper.material = redMat;
-		// tileWrapper.visibility = 1;
-		// return;
-
-		token.setEnabled(false);
-
-		const tokenPosistion = [
-			new Vector3(0, 0.11, 0),
-			new Vector3(-0.15, 0.11, 0.15),
-			new Vector3(0.15, 0.11, -0.15),
-			new Vector3(0, 0.11, -0.25),
-			new Vector3(-0.25 * Math.cos(Math.PI / 6), 0.11, 0.125),
-			new Vector3(0.25 * Math.cos(Math.PI / 6), 0.11, 0.125),
-		];
-		for (let q = -N; q <= N; q++) {
-			const r1 = Math.max(-N, -q - N);
-			const r2 = Math.min(N, -q + N);
-			for (let r = r1; r <= r2; r++) {
-				const s = -q - r;
-				const tileID = this.tileIDFromQRS(q, r, s);
-				const blank = tile.clone(tileID, this.anchor)!;
-				blank.id = 'blank';
-				blank.position = this.tileVectorFromQRS(q, r);
-				blank.visibility = 1;
-				blank.material = this.material.tile.blank;
-				const tileAnchor = new TransformNode(tileID, this.scene);
-				tileAnchor.parent = blank;
-				tokenPosistion.forEach((pos, i) => {
-					const emptyToken = token.clone(tileID + `[${i}]`, tileAnchor)!;
-					emptyToken.position = pos;
-					emptyToken.scaling = new Vector3(0.4, 0.1, 0.4);
-					emptyToken.visibility = 1;
-				});
-			}
-		}
-		this.setInitialTiles();
-	}
-
-	setInitialTiles() {
 		const randomStartingTileID = Math.floor(Math.random() * 5);
 		const startingTile = startingTiles[randomStartingTileID];
 		[
 			[0, 0, 0],
 			[0, 1, -1],
 			[-1, 1, 0],
-		].forEach(([q, r, s], i) => {
-			const thisStartingTile = startingTile[i];
-			const targetTileID = this.tileIDFromQRS(q, r, s);
-			this.drawHabitat(thisStartingTile, targetTileID, thisStartingTile.rotation);
-			this.setTile(thisStartingTile, targetTileID, thisStartingTile.rotation);
-		});
-	}
+		]
+			.map(([q, r, s], i) => {
+				const tileInfo = startingTile[i];
+				const tileName = this.tileNameFromQRS(q, r, s);
+				this.assets.cloneTile(
+					this.anchor,
+					'habitat',
+					tileName,
+					tileInfo,
+					this.tileVectorFromQRS(q, r)
+				);
 
-	resetPossiblePathMaterial() {
-		const blankMat = this.scene.getMeshById('blank')!.material;
-
-		this.scene
-			.getMeshesById('blank')
-			.filter((v) => v.visibility == 1)
-			.forEach((mesh) => {
-				mesh.getChildren().forEach((chMesh) => chMesh.dispose());
-				mesh.material = blankMat;
+				return { tileInfo, tileName };
+			})
+			.forEach((v) => {
+				this.setTile(v.tileInfo, v.tileName, v.tileInfo.rotation);
 			});
 	}
 
-	drawHabitat(tileInfo: TileInfo, tileID: string, rotation = 0) {
-		// UI
-		const tile = this.scene.getMeshByName(tileID)!;
-
-		// targetTileMesh.visibility = 1;
-
-		const tileKey = tileInfo.habitats.join('-') as TileKey;
-		tile.material = this.material.tile[tileKey];
-		tile.rotation = new Vector3(0, Tools.ToRadians(rotation), 0);
-
-		const wildLifeSize = tileInfo.wildlife.length;
-		const startIndex = (1 << (wildLifeSize - 1)) - 1;
-
-		const wildLifeMeshes = tile.getChildMeshes();
-		wildLifeMeshes.forEach((mesh) => mesh.setEnabled(false));
-		tileInfo.wildlife.forEach((v: TokenKey, i) => {
-			// wildLifeMeshes[startIndex + i].setVerticesData(this.uvData.tokenIndex, this.uvData.token[v]);
-			wildLifeMeshes[startIndex + i].material = this.material.token[v];
-			wildLifeMeshes[startIndex + i].setEnabled(true);
-		});
-
-		tile.getChildTransformNodes()[0].rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
-
-		tile.renderingGroupId = 0;
-		tile.getChildMeshes().forEach((mesh) => {
-			mesh.renderingGroupId = 0;
-		});
-	}
-
-	public drawPossiblePaths(tileID: string) {
-		this.getNeighborTileIDs(tileID).forEach((neighborTileID) => {
-			if (!this.mapData.has(neighborTileID)) {
-				const neighbor = this.scene.getMeshByName(neighborTileID)!;
-				neighbor.renderOverlay = true;
-			} else {
-				console.log(neighborTileID);
-			}
-			// neighborMesh.renderingGroupId = 0;
-		});
-	}
-
-	private getRotationIndex(rotation: number) {
-		if (rotation >= 360) rotation %= 360;
-		else if (rotation <= -360) rotation %= -360;
-		const sign = Math.sign(rotation) != -1 ? 'positive' : 'negative';
-		return rotationIndexes[sign].indexOf(rotation);
+	public setTile(tileInfo: TileInfo, tileName: string, rotation: number) {
+		const mesh = this.scene.getMeshByName(tileName)!;
+		mesh.id = 'habitat';
+		const tile: Tile = {
+			tileNum: this.mapData.size + 1,
+			placedToken: null,
+			habaitats: tileInfo.habitats,
+			wildlife: tileInfo.wildlife,
+			habitatSides: this.getHabitatSides(tileInfo.habitats, rotation),
+			neighborhood: this.getNeighborTileNames(tileName),
+			qrs: this.qrsFromTileID(tileName),
+		};
+		this.mapData.set(tileName, tile);
+		this.drawBlank(tileName);
 	}
 
 	private getHabitatSides(habitats: Array<Habitat>, rotation: number) {
+		if (rotation >= 360) rotation %= 360;
+		else if (rotation <= -360) rotation %= -360;
+		const sign = Math.sign(rotation) != -1 ? 'positive' : 'negative';
 		const habitatSides = new Array(6);
 		if (habitats.length == 1) {
 			habitatSides.fill(habitats[0]);
 		} else {
 			const [h1, h2] = habitats;
 			let currentHabitat = h1;
-			let habitatIndex = this.getRotationIndex(rotation);
+			let habitatIndex = rotationIndexes[sign].indexOf(rotation);
 
 			for (let i = 0; i < 6; i++) {
 				habitatSides[habitatIndex] = currentHabitat;
@@ -178,29 +96,112 @@ export class Board {
 		return habitatSides;
 	}
 
-	public setTile(tileInfo: TileInfo, tileID: string, rotation: number) {
-		const mesh = this.scene.getMeshByName(tileID)!;
-		mesh.id = 'habitat';
-		mesh.metadata = tileInfo.wildlife;
-		const tile: Tile = {
-			tileNum: this.mapData.size + 1,
-			placedToken: null,
-			habaitats: tileInfo.habitats,
-			wildlife: tileInfo.wildlife,
-			habitatSides: this.getHabitatSides(tileInfo.habitats, rotation),
-			neighborhood: this.getNeighborTileIDs(tileID),
-			qrs: this.qrsFromTileID(tileID),
-		};
-		this.mapData.set(tileID, tile);
-		this.drawPossiblePaths(tileID);
+	public paintBlank(tileName: string) {
+		const tile = this.scene.getMeshByName(tileName)!;
+		tile.id = 'blank';
+		tile.rotation = new Vector3(0, 0, 0);
+		tile.getChildMeshes().forEach((mesh) => mesh.setEnabled(false));
+		tile.getChildTransformNodes()[0].rotation = new Vector3(0, 0, 0);
 	}
 
-	public setToken(wildLife: WildLife, tileID: string) {
-		this.scene.getMeshByName(tileID)!.id = 'used-habitat';
-		const tile = this.mapData.get(tileID)!;
-		tile.placedToken = wildLife;
-		this.mapData.set(tileID, tile);
+	public paintHabitat(tileName: string, tileInfo: TileInfo, rotation = 0) {
+		const tile = this.scene.getMeshByName(tileName)!;
+		tile.id = 'habitat';
+
+		const tileMatKey = tileInfo.habitats.join('-') as TileKey;
+		tile.material = this.assets.tileMat[tileMatKey];
+		tile.rotation = new Vector3(0, Tools.ToRadians(rotation), 0);
+
+		const wildLifeSize = tileInfo.wildlife.length;
+		const startIndex = (1 << (wildLifeSize - 1)) - 1;
+
+		const wildLifeMeshes = tile.getChildMeshes();
+		wildLifeMeshes.forEach((mesh) => mesh.setEnabled(false));
+		tileInfo.wildlife.forEach((v: TokenKey, i) => {
+			wildLifeMeshes[startIndex + i].material = this.assets.tokenMat[v];
+			wildLifeMeshes[startIndex + i].setEnabled(true);
+		});
+		tile.getChildTransformNodes()[0].rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
+		// tile.renderingGroupId = 0;
+		// tile.getChildMeshes().forEach((mesh) => {
+		// 	mesh.renderingGroupId = 0;
+		// });
 	}
+
+	private drawBlank(tileName: string) {
+		this.getNeighborTileNames(tileName).forEach((neighbor) => {
+			if (!this.scene.getMeshByName(neighbor)) {
+				const { q, r } = this.qrsFromTileID(neighbor);
+				this.assets.cloneTile(
+					this.anchor,
+					'blank',
+					neighbor,
+					{ habitats: [], wildlife: [], rotation: 0, tileNum: '' },
+					this.tileVectorFromQRS(q, r)
+				);
+			}
+		});
+	}
+
+	// resetPossiblePathMaterial() {
+	// 	const blankMat = this.scene.getMeshById('blank')!.material;
+
+	// 	this.scene
+	// 		.getMeshesById('blank')
+	// 		.filter((v) => v.visibility == 1)
+	// 		.forEach((mesh) => {
+	// 			mesh.getChildren().forEach((chMesh) => chMesh.dispose());
+	// 			mesh.material = blankMat;
+	// 		});
+	// }
+
+	// drawHabitat(tileInfo: TileInfo, tileID: string, rotation = 0) {
+	// 	// UI
+	// 	const tile = this.scene.getMeshByName(tileID)!;
+
+	// 	// targetTileMesh.visibility = 1;
+
+	// 	const tileKey = tileInfo.habitats.join('-') as TileKey;
+	// 	tile.material = this.assets.tileMat[tileKey];
+	// 	tile.rotation = new Vector3(0, Tools.ToRadians(rotation), 0);
+
+	// 	const wildLifeSize = tileInfo.wildlife.length;
+	// 	const startIndex = (1 << (wildLifeSize - 1)) - 1;
+
+	// 	const wildLifeMeshes = tile.getChildMeshes(false, (mesh) => mesh.name == 'plane');
+	// 	wildLifeMeshes.forEach((mesh) => mesh.setEnabled(false));
+	// 	tileInfo.wildlife.forEach((v: TokenKey, i) => {
+	// 		// wildLifeMeshes[startIndex + i].setVerticesData(this.uvData.tokenIndex, this.uvData.token[v]);
+	// 		wildLifeMeshes[startIndex + i].material = this.assets.tokenMat[v];
+	// 		wildLifeMeshes[startIndex + i].setEnabled(true);
+	// 	});
+
+	// 	tile.getChildTransformNodes()[0].rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
+
+	// 	tile.renderingGroupId = 0;
+	// 	tile.getChildMeshes().forEach((mesh) => {
+	// 		mesh.renderingGroupId = 0;
+	// 	});
+	// }
+
+	// public drawPossiblePaths(tileID: string) {
+	// 	this.getNeighborTileIDs(tileID).forEach((neighborTileID) => {
+	// 		if (!this.mapData.has(neighborTileID)) {
+	// 			const neighbor = this.scene.getMeshByName(neighborTileID)!;
+	// 			neighbor.renderOverlay = true;
+	// 		} else {
+	// 			console.log(neighborTileID);
+	// 		}
+	// 		// neighborMesh.renderingGroupId = 0;
+	// 	});
+	// }
+
+	// public setToken(wildLife: WildLife, tileID: string) {
+	// 	this.scene.getMeshByName(tileID)!.id = 'used-habitat';
+	// 	const tile = this.mapData.get(tileID)!;
+	// 	tile.placedToken = wildLife;
+	// 	this.mapData.set(tileID, tile);
+	// }
 
 	private tileVectorFromQRS(q: number, r: number) {
 		const column = q + (r - (r & 1)) / 2;
@@ -211,7 +212,7 @@ export class Board {
 		const z = row * H;
 		return new Vector3(x, 0, z);
 	}
-	private tileIDFromQRS(q: number, r: number, s: number) {
+	private tileNameFromQRS(q: number, r: number, s: number) {
 		return `tile[${q}][${r}][${s}]`;
 	}
 
@@ -225,7 +226,7 @@ export class Board {
 		}
 	}
 
-	private getNeighborTileIDs(tileID: string) {
+	private getNeighborTileNames(tileID: string) {
 		const { q, r, s } = this.qrsFromTileID(tileID);
 		return [
 			[1, -1, 0], // NE
@@ -234,6 +235,6 @@ export class Board {
 			[-1, 1, 0], // SW
 			[-1, 0, 1], // W
 			[0, -1, 1], // NW
-		].map((dir) => this.tileIDFromQRS(q + dir[0], r + dir[1], s + dir[2]));
+		].map((dir) => this.tileNameFromQRS(q + dir[0], r + dir[1], s + dir[2]));
 	}
 }

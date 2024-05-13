@@ -25,7 +25,7 @@ import { Board } from './board';
 import { Pocket } from './pocket';
 import { CascadiaActionManager } from './actionManager';
 import { Inspector } from '@babylonjs/inspector';
-import { MaterialManager } from './material';
+import { Assets } from './assets';
 (window as any).BABYLON = BABYLON;
 
 // const H = 1.5;
@@ -47,25 +47,26 @@ class App {
 		this.engine = (await EngineFactory.CreateAsync(canvas, undefined)) as Engine;
 
 		await this.createScene();
-		const mat = new MaterialManager(this.scene);
+
 		const actionManager = new ActionManager(this.scene);
-		const someAction = new ExecuteCodeAction(
-			ActionManager.OnPickDownTrigger,
-			(_evt) => {
-				this.num++;
-				console.log(this.num);
-				console.log('xxxxxx');
-				console.log(_evt.additionalData.pickedMesh.name);
-				console.log(_evt.meshUnderPointer!.name);
-				console.log(this);
-			},
-			new PredicateCondition(actionManager, () => this.num < 20)
-		);
+
+		// const someAction = new ExecuteCodeAction(
+		// 	ActionManager.OnPickDownTrigger,
+		// 	(_evt) => {
+		// 		this.num++;
+		// 		console.log(this.num);
+		// 		console.log('xxxxxx');
+		// 		console.log(_evt.additionalData.pickedMesh.name);
+		// 		console.log(_evt.meshUnderPointer!.name);
+		// 		console.log(this);
+		// 	},
+		// 	new PredicateCondition(actionManager, () => this.num < 20)
+		// );
 
 		// someAction.setTriggerParameter(this);
-
-		this.board = new Board(this.scene, mat, someAction);
-		// this.pocket = new Pocket(this.scene, mat);
+		const assets = new Assets(this.scene);
+		this.board = new Board(this.scene, assets);
+		this.pocket = new Pocket(this.scene, assets);
 		// this.tilaAction = new CascadiaActionManager(this.scene, this.board, this.pocket);
 
 		this.engine.runRenderLoop(() => {
@@ -125,7 +126,8 @@ class App {
 		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia-final.glb', this.scene);
 
 		assets.meshes.forEach((mesh, _i) => {
-			mesh.visibility = 0;
+			mesh.setEnabled(false);
+
 			// mesh.renderingGroupId = 1;
 			// if (mesh.id.includes('throw')) {
 			// 	Tags.AddTagsTo(mesh, 'popup');
@@ -176,15 +178,14 @@ class App {
 		// this.scene.getMeshesByTags('salmon-wipe').forEach((mesh) => {
 		// 	mesh.visibility = 1;
 		// });
-		this.test();
 	}
 
-	test() {
-		this.scene.actionManager = new ActionManager(this.scene);
-		this.scene.actionManager.registerAction(
-			new ExecuteCodeAction(ActionManager.OnPickDownTrigger, async (_evt) => {})
-		);
-	}
+	// test() {
+	// 	this.scene.actionManager = new ActionManager(this.scene);
+	// 	this.scene.actionManager.registerAction(
+	// 		new ExecuteCodeAction(ActionManager.OnPickDownTrigger, async (_evt) => {})
+	// 	);
+	// }
 
 	// testMoveCam() {
 	// 	const text = this.scene.getMeshById('bear-throw')!;

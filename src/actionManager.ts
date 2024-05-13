@@ -120,7 +120,7 @@ export class CascadiaActionManager {
 							if (this.selectedTile?.habitats.length == 1) return;
 							this.rotation += 60;
 							if (this.rotation >= 360) this.rotation %= 360;
-							this.board.drawHabitat(
+							this.board.paintHabitat(
 								this.selectedTile!,
 								this.targetTile!,
 								this.rotation
@@ -135,7 +135,7 @@ export class CascadiaActionManager {
 							if (this.selectedTile?.habitats.length == 1) return;
 							this.rotation -= 60;
 							if (this.rotation <= -360) this.rotation %= 360;
-							this.board.drawHabitat(
+							this.board.paintHabitat(
 								this.selectedTile!,
 								this.targetTile!,
 								this.rotation
@@ -253,7 +253,7 @@ export class CascadiaActionManager {
 			else if (hitBlank?.hit && hitBlank.pickedMesh && this.selectedTile && !this.setTile) {
 				this.board.resetPossiblePathMaterial();
 				this.targetTile = hitBlank.pickedMesh.name;
-				this.board.drawHabitat(this.selectedTile, this.targetTile, 0);
+				this.board.paintHabitat(this.selectedTile, this.targetTile, 0);
 				this.showTileActionButtons();
 			}
 			// 토큰을 서식지에 배치할 때.
@@ -309,7 +309,7 @@ export class CascadiaActionManager {
 			// 보드 위에서 타일의 위치를 결정하기 위해 커서가 움직일때.
 			else if (hitBlank?.hit && hitBlank.pickedMesh && this.selectedTile && this.targetTile == null) {
 				this.board.resetPossiblePathMaterial();
-				this.board.drawHabitat(this.selectedTile, hitBlank.pickedMesh.name);
+				this.board.paintHabitat(this.selectedTile, hitBlank.pickedMesh.name);
 			}
 			// 타일 입력을 완료하고 토큰 위치를 결정하기 위해 커서가 움직일 때.
 			else if (hitHabitat?.hit && hitHabitat.pickedMesh && this.setTile && this.selectedToken) {
