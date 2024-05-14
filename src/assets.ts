@@ -1,13 +1,6 @@
-import {
-	AbstractMesh,
-	Color3,
-	Material,
-	Scene,
-	StandardMaterial,
-	Tools,
-	TransformNode,
-	Vector3,
-} from '@babylonjs/core';
+import { AbstractMesh, Color3, Material, StandardMaterial, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import { Scene } from './scene';
+
 import { TileInfo, TileKey as TileMatKey, TokenKey as TokenMatKey, WildLife } from './interfaces';
 
 export class Assets {

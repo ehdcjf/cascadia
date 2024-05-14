@@ -7,7 +7,6 @@ import {
 	Mesh,
 	PointerEventTypes,
 	Ray,
-	Scene,
 	Tags,
 	Tools,
 	TransformNode,
@@ -15,6 +14,8 @@ import {
 	Animation,
 	PredicateCondition,
 } from '@babylonjs/core';
+import { Scene } from './scene';
+
 import { TileInfo } from './interfaces';
 import { Board } from './board';
 import { Pocket } from './pocket';
@@ -37,9 +38,28 @@ export class CascadiaActionManager {
 	constructor(private scene: Scene, private board: Board, private pocket: Pocket) {
 		this.actionManager = new ActionManager(this.scene);
 		this.scene.actionManager = this.actionManager;
-		console.log('xx');
-		this.pickTile();
-		console.log('jjjj');
+		// this.scene.onPointerDown = (_evt, _pickInfo) => {
+		// 	const ray = this.scene.createPickingRay(
+		// 		this.scene.pointerX,
+		// 		this.scene.pointerY,
+		// 		Matrix.Identity(),
+		// 		this.scene.getCameraById('camera2')
+		// 	);
+
+		// 	const hitToken = this.scene.pickWithRay(ray, (mesh) => {
+		// 		return mesh && mesh?.id == 'token';
+		// 	});
+
+		// 	if (hitToken?.hit && hitToken.pickedMesh) {
+		// 		console.log(hitToken);
+		// 		// const pickedMesh = hitToken.pickedMesh;
+		// 		// pickedMesh.visibility = 1;
+		// 	}
+
+		// 	// 주머니에서 타일 선택했을 때
+
+		// 	//
+		// };
 		// this.scene.actionManager = this.
 		// this.setTileActionButtons();
 		// this.setPointerDownEvent();
@@ -51,22 +71,6 @@ export class CascadiaActionManager {
 		// 		}
 		// 	});
 		// });
-	}
-
-	private pickTile() {
-		const someAction = new ExecuteCodeAction(
-			ActionManager.OnPickDownTrigger,
-			(_evt) => {
-				console.log(_evt.additionalData.pickedMesh.name);
-				console.log(_evt.meshUnderPointer!.name);
-				console.log(this);
-			},
-			new PredicateCondition(this.actionManager, () => true)
-		);
-
-		return someAction;
-
-		// someAction.setTriggerParameter(this);
 	}
 
 	// private setTileActionButtons() {

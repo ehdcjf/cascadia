@@ -2,12 +2,14 @@ import {
 	AbstractMesh,
 	ActionManager,
 	Color3,
-	Scene,
+	ExecuteCodeAction,
+	PredicateCondition,
 	StandardMaterial,
 	Tools,
 	TransformNode,
 	Vector3,
 } from '@babylonjs/core';
+import { Scene } from './scene';
 import { startingTiles } from '../src2/data';
 import { Habitat, Tile, TileInfo, TileKey, TokenKey, WildLife } from './interfaces';
 import { TileScoring } from './score/tile';
@@ -132,13 +134,25 @@ export class Board {
 		this.getNeighborTileNames(tileName).forEach((neighbor) => {
 			if (!this.scene.getMeshByName(neighbor)) {
 				const { q, r } = this.qrsFromTileID(neighbor);
-				this.assets.cloneTile(
+				const blank = this.assets.cloneTile(
 					this.anchor,
 					'blank',
 					neighbor,
 					{ habitats: [], wildlife: [], rotation: 0, tileNum: '' },
 					this.tileVectorFromQRS(q, r)
 				);
+
+				blank.actionManager = new ActionManager(this.scene);
+				const selectTileAction = new ExecuteCodeAction(
+					ActionManager.OnPickDownTrigger,
+					(_evt) => {
+						console.log(this.scene.metadata);
+						console.log(_evt.meshUnderPointer?.name);
+					},
+					new PredicateCondition(blank.actionManager as ActionManager, () => true)
+				);
+
+				blank.actionManager.registerAction(selectTileAction);
 			}
 		});
 	}

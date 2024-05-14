@@ -2,7 +2,6 @@ import '@babylonjs/core/Debug/debugLayer';
 import '@babylonjs/loaders/glTF';
 import {
 	Engine,
-	Scene,
 	Vector3,
 	SceneLoader,
 	EngineFactory,
@@ -10,23 +9,16 @@ import {
 	ArcRotateCamera,
 	Tools,
 	Viewport,
-	Matrix,
-	PointerEventTypes,
-	Tags,
-	TransformNode,
-	ActionManager,
-	ExecuteCodeAction,
-	PredicateCondition,
-	Condition,
 } from '@babylonjs/core';
 
-import * as BABYLON from '@babylonjs/core';
+import { Scene } from './scene';
 import { Board } from './board';
 import { Pocket } from './pocket';
 import { CascadiaActionManager } from './action';
 import { Inspector } from '@babylonjs/inspector';
 import { Assets } from './assets';
-(window as any).BABYLON = BABYLON;
+import { ScenMatadata } from './metadata';
+// (window as any).BABYLON = BABYLON;
 
 // const H = 1.5;
 // const W = Math.cos(Math.PI / 6);
@@ -64,6 +56,7 @@ class App {
 		this.engine.displayLoadingUI();
 		this.scene = new Scene(this.engine);
 
+		this.scene.metadata = new ScenMatadata();
 		const camera = new ArcRotateCamera(
 			'camera',
 			Tools.ToRadians(90),
@@ -90,8 +83,7 @@ class App {
 
 		this.scene.activeCameras?.push(camera);
 		this.scene.activeCameras?.push(camera2);
-		this.scene.cameraToUseForPointers = camera;
-		camera.layerMask = 0xffffff0f;
+		// this.scene.cameraToUseForPointers = camera;
 
 		// this.subScene.activeCamera = camera2;
 

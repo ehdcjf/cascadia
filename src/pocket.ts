@@ -1,9 +1,30 @@
-import { Scene, Tools, TransformNode, Vector3, Animation, AbstractMesh } from '@babylonjs/core';
+import {
+	Tools,
+	TransformNode,
+	Vector3,
+	Animation,
+	AbstractMesh,
+	ActionManager,
+	ExecuteCodeAction,
+	PredicateCondition,
+	Color3,
+	Color4,
+} from '@babylonjs/core';
 import { TileInfo, WildLife } from './interfaces';
 import { tiles } from './data';
 import { numFromName, sleep } from './utils';
 import { Assets } from './assets';
 const positionY = [-3, -1, 1, 3, 5];
+import { Scene } from './scene';
+import { SceneState } from './metadata';
+
+/**
+	 *   엣지
+	 * 	tile.edgesColor = Color4.FromColor3(Color3.Yellow(), 1);
+			tile.edgesWidth = 4.0;
+			tile.enableEdgesRendering();
+	 * 
+	 */
 
 export class Pocket {
 	allTokens: WildLife[] = [];
@@ -13,7 +34,7 @@ export class Pocket {
 	tiles: (TileInfo | null)[] = [];
 	tileEdges: AbstractMesh[] = [];
 
-	constructor(protected scene: Scene, private assets: Assets) {
+	constructor(private scene: Scene, private assets: Assets) {
 		this.anchor = new TransformNode('pocket-anchor', this.scene);
 		this.anchor.position = new Vector3(100, 100, 100);
 
@@ -36,15 +57,9 @@ export class Pocket {
 		});
 	}
 
-	public cleanEdge() {
-		this.scene.getMeshesById('edge').forEach((mesh) => {
-			mesh.material = this.assets.tokenEdgeMat['none'];
-		});
-	}
+	public cleanEdge() {}
 
-	public paintEdge(index: number, color: 'red' | 'yellow' | 'none') {
-		this.scene.getMeshByName('edge' + index)!.material = this.assets.tokenEdgeMat[color];
-	}
+	public paintEdge(index: number, color: 'red' | 'yellow' | 'none') {}
 
 	protected setupTokens() {
 		const tokenNums: Record<WildLife, number> = {
@@ -137,11 +152,12 @@ export class Pocket {
 	private popToken() {
 		const wildlife = this.allTokens.pop()!;
 
-		// const token = this.pocketToken.clone('token4', this.anchor)!;
+		// UI
 		const token = this.assets.cloneToken(this.anchor, 'token', 'token4', wildlife, new Vector3(-1, 5, 0));
 		token.metadata = wildlife;
 		token.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
 		token.scaling = new Vector3(0.6, 0.6, 0.6);
+
 		return token;
 	}
 
@@ -163,10 +179,12 @@ export class Pocket {
 			tiles.push(this.popTile());
 		}
 		tiles.forEach(async (tile, dest) => {
+			//Set Pick Down Event
+
+			// Set Animation
 			const src = numFromName(tile.name);
 			const startY = positionY[src];
 			const endY = positionY[dest];
-
 			await Animation.CreateAndStartAnimation(
 				'refillTile',
 				tile,
@@ -178,6 +196,7 @@ export class Pocket {
 				Animation.ANIMATIONLOOPMODE_CONSTANT
 			)!.waitAsync();
 
+			// tile.disableEdgesRendering()
 			tile.name = 'tile' + dest;
 		});
 	}
@@ -191,6 +210,13 @@ export class Pocket {
 		}
 
 		tokens.forEach(async (token, dest) => {
+			token.actionManager = new ActionManager(this.scene);
+			const condition = new PredicateCondition(token.actionManager as ActionManager, () => true);
+			const selectTileAction = new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (_evt) => {
+				console.log(_evt);
+			});
+
+			token.actionManager.registerAction(selectTileAction);
 			const src = numFromName(token.name);
 			const startY = positionY[src];
 			const endY = positionY[dest];
