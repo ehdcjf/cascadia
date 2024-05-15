@@ -1,20 +1,15 @@
+import { AbstractMesh } from '@babylonjs/core';
+import { TileInfo, TileKey } from './interfaces';
+
 export enum SceneState {
-	TEMP,
-	TEMP2,
+	PICK_TILE,
+	TILE_ACTION,
 	TEMP3,
 }
 
 export class ScenMatadata {
-	private _state: SceneState;
-	constructor() {
-		this._state = SceneState.TEMP;
-	}
-
-	get state() {
-		return this._state;
-	}
-
-	set state(value: SceneState) {
-		this._state = value;
-	}
+	public state: SceneState = SceneState.PICK_TILE;
+	public tile: TileInfo | null = null;
+	public targetTile: AbstractMesh | null = null;
+	constructor() {}
 }

@@ -3,8 +3,10 @@ import {
 	ActionManager,
 	Color3,
 	ExecuteCodeAction,
+	Observable,
 	PredicateCondition,
 	StandardMaterial,
+	StateCondition,
 	Tools,
 	TransformNode,
 	Vector3,
@@ -14,6 +16,8 @@ import { startingTiles } from '../src2/data';
 import { Habitat, Tile, TileInfo, TileKey, TokenKey, WildLife } from './interfaces';
 import { TileScoring } from './score/tile';
 import { Assets } from './assets';
+import { SceneState } from './metadata';
+import { ModalEvents } from './action';
 const rotationIndexes = {
 	positive: [0, 60, 120, 180, 240, 300],
 	negative: [0, -300, -240, -180, -120, -60],
@@ -28,7 +32,11 @@ export class Board {
 	protected possiblePath: Map<string, AbstractMesh> = new Map();
 	public readonly anchor: TransformNode;
 
-	constructor(protected scene: Scene, private readonly assets: Assets) {
+	constructor(
+		protected scene: Scene,
+		private readonly assets: Assets,
+		private readonly observer: Observable<ModalEvents>
+	) {
 		this.anchor = new TransformNode('board-anchor', this.scene);
 		this.init();
 		// const x = new TileScoring(this.mapData);
@@ -45,7 +53,7 @@ export class Board {
 			.map(([q, r, s], i) => {
 				const tileInfo = startingTile[i];
 				const tileName = this.tileNameFromQRS(q, r, s);
-				this.assets.cloneTile(
+				const tile = this.assets.cloneTile(
 					this.anchor,
 					'habitat',
 					tileName,
@@ -102,12 +110,15 @@ export class Board {
 		const tile = this.scene.getMeshByName(tileName)!;
 		tile.id = 'blank';
 		tile.rotation = new Vector3(0, 0, 0);
-		tile.getChildMeshes().forEach((mesh) => mesh.setEnabled(false));
+		tile.getChildMeshes().forEach((mesh) => {
+			mesh.setEnabled(false);
+		});
 		tile.getChildTransformNodes()[0].rotation = new Vector3(0, 0, 0);
 	}
 
 	public paintHabitat(tileName: string, tileInfo: TileInfo, rotation = 0) {
 		const tile = this.scene.getMeshByName(tileName)!;
+
 		tile.id = 'habitat';
 
 		const tileMatKey = tileInfo.habitats.join('-') as TileKey;
@@ -130,6 +141,30 @@ export class Board {
 		// });
 	}
 
+	// public paintHabitat(tileName: string, tileInfo: TileInfo, rotation = 0) {
+	// 	const tile = this.scene.getMeshByName(tileName)!;
+	// 	tile.id = 'habitat';
+
+	// 	const tileMatKey = tileInfo.habitats.join('-') as TileKey;
+	// 	tile.material = this.assets.tileMat[tileMatKey];
+	// 	tile.rotation = new Vector3(0, Tools.ToRadians(rotation), 0);
+
+	// 	const wildLifeSize = tileInfo.wildlife.length;
+	// 	const startIndex = (1 << (wildLifeSize - 1)) - 1;
+
+	// 	const wildLifeMeshes = tile.getChildMeshes();
+	// 	wildLifeMeshes.forEach((mesh) => mesh.setEnabled(false));
+	// 	tileInfo.wildlife.forEach((v: TokenKey, i) => {
+	// 		wildLifeMeshes[startIndex + i].material = this.assets.tokenMat[v];
+	// 		wildLifeMeshes[startIndex + i].setEnabled(true);
+	// 	});
+	// 	tile.getChildTransformNodes()[0].rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
+	// 	// tile.renderingGroupId = 0;
+	// 	// tile.getChildMeshes().forEach((mesh) => {
+	// 	// 	mesh.renderingGroupId = 0;
+	// 	// });
+	// }
+
 	private drawBlank(tileName: string) {
 		this.getNeighborTileNames(tileName).forEach((neighbor) => {
 			if (!this.scene.getMeshByName(neighbor)) {
@@ -141,81 +176,73 @@ export class Board {
 					{ habitats: [], wildlife: [], rotation: 0, tileNum: '' },
 					this.tileVectorFromQRS(q, r)
 				);
+				const actionManager = new ActionManager(this.scene);
+				blank.actionManager = actionManager;
 
-				blank.actionManager = new ActionManager(this.scene);
-				const selectTileAction = new ExecuteCodeAction(
-					ActionManager.OnPickDownTrigger,
-					(_evt) => {
-						console.log(this.scene.metadata);
-						console.log(_evt.meshUnderPointer?.name);
-					},
-					new PredicateCondition(blank.actionManager as ActionManager, () => true)
+				const drawHabitatCondition = new PredicateCondition(
+					actionManager,
+					() =>
+						this.scene.metadata.state == SceneState.PICK_TILE &&
+						!!this.scene.metadata.tile
 				);
 
-				blank.actionManager.registerAction(selectTileAction);
+				// const drawBlankCondition = new PredicateCondition(
+				// 	actionManager,
+				// 	() => this.scene.metadata.state == SceneState.PICK_TILE
+				// );
+
+				const moveInAction = new ExecuteCodeAction(
+					ActionManager.OnPointerOverTrigger,
+					() => {
+						actionManager.hoverCursor = 'pointer';
+						const tileInfo = this.scene.metadata.tile!;
+						const tileKey = tileInfo.habitats.join('-') as TileKey;
+						blank.material = this.assets.tileMat[tileKey];
+
+						const wildLifeSize = tileInfo.wildlife.length;
+						const startIndex = (1 << (wildLifeSize - 1)) - 1;
+
+						const wildLifeMeshes = blank.getChildMeshes();
+						wildLifeMeshes.forEach((mesh) => mesh.setEnabled(false));
+						tileInfo.wildlife.forEach((v: TokenKey, i) => {
+							const mesh = wildLifeMeshes[startIndex + i];
+							mesh.material = this.assets.tokenMat[v];
+							mesh.setEnabled(true);
+							mesh.isPickable = false;
+						});
+					},
+					drawHabitatCondition
+				);
+
+				const moveOutAction = new ExecuteCodeAction(
+					ActionManager.OnPointerOutTrigger,
+					() => {
+						actionManager.hoverCursor = 'default';
+
+						blank.material = this.assets.tileMat['blank'];
+						blank.getChildMeshes().forEach((mesh) => mesh.setEnabled(false));
+					},
+					drawHabitatCondition
+				);
+
+				const pointerDownAction = new ExecuteCodeAction(
+					ActionManager.OnPickDownTrigger,
+					() => {
+						actionManager.hoverCursor = 'default';
+						this.scene.metadata.state = SceneState.TILE_ACTION;
+						this.scene.metadata.targetTile = blank;
+						this.observer.notifyObservers(ModalEvents.OPEN_TILE_ACTION);
+					},
+					drawHabitatCondition
+				);
+
+				actionManager.hoverCursor = 'default';
+				blank.actionManager.registerAction(moveInAction);
+				blank.actionManager.registerAction(moveOutAction);
+				blank.actionManager.registerAction(pointerDownAction);
 			}
 		});
 	}
-
-	// resetPossiblePathMaterial() {
-	// 	const blankMat = this.scene.getMeshById('blank')!.material;
-
-	// 	this.scene
-	// 		.getMeshesById('blank')
-	// 		.filter((v) => v.visibility == 1)
-	// 		.forEach((mesh) => {
-	// 			mesh.getChildren().forEach((chMesh) => chMesh.dispose());
-	// 			mesh.material = blankMat;
-	// 		});
-	// }
-
-	// drawHabitat(tileInfo: TileInfo, tileID: string, rotation = 0) {
-	// 	// UI
-	// 	const tile = this.scene.getMeshByName(tileID)!;
-
-	// 	// targetTileMesh.visibility = 1;
-
-	// 	const tileKey = tileInfo.habitats.join('-') as TileKey;
-	// 	tile.material = this.assets.tileMat[tileKey];
-	// 	tile.rotation = new Vector3(0, Tools.ToRadians(rotation), 0);
-
-	// 	const wildLifeSize = tileInfo.wildlife.length;
-	// 	const startIndex = (1 << (wildLifeSize - 1)) - 1;
-
-	// 	const wildLifeMeshes = tile.getChildMeshes(false, (mesh) => mesh.name == 'plane');
-	// 	wildLifeMeshes.forEach((mesh) => mesh.setEnabled(false));
-	// 	tileInfo.wildlife.forEach((v: TokenKey, i) => {
-	// 		// wildLifeMeshes[startIndex + i].setVerticesData(this.uvData.tokenIndex, this.uvData.token[v]);
-	// 		wildLifeMeshes[startIndex + i].material = this.assets.tokenMat[v];
-	// 		wildLifeMeshes[startIndex + i].setEnabled(true);
-	// 	});
-
-	// 	tile.getChildTransformNodes()[0].rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
-
-	// 	tile.renderingGroupId = 0;
-	// 	tile.getChildMeshes().forEach((mesh) => {
-	// 		mesh.renderingGroupId = 0;
-	// 	});
-	// }
-
-	// public drawPossiblePaths(tileID: string) {
-	// 	this.getNeighborTileIDs(tileID).forEach((neighborTileID) => {
-	// 		if (!this.mapData.has(neighborTileID)) {
-	// 			const neighbor = this.scene.getMeshByName(neighborTileID)!;
-	// 			neighbor.renderOverlay = true;
-	// 		} else {
-	// 			console.log(neighborTileID);
-	// 		}
-	// 		// neighborMesh.renderingGroupId = 0;
-	// 	});
-	// }
-
-	// public setToken(wildLife: WildLife, tileID: string) {
-	// 	this.scene.getMeshByName(tileID)!.id = 'used-habitat';
-	// 	const tile = this.mapData.get(tileID)!;
-	// 	tile.placedToken = wildLife;
-	// 	this.mapData.set(tileID, tile);
-	// }
 
 	private tileVectorFromQRS(q: number, r: number) {
 		const column = q + (r - (r & 1)) / 2;

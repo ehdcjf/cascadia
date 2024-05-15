@@ -1,4 +1,14 @@
-import { AbstractMesh, Color3, Material, StandardMaterial, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import {
+	AbstractMesh,
+	ActionManager,
+	Color3,
+	ExecuteCodeAction,
+	Material,
+	StandardMaterial,
+	Tools,
+	TransformNode,
+	Vector3,
+} from '@babylonjs/core';
 import { Scene } from './scene';
 
 import { TileInfo, TileKey as TileMatKey, TokenKey as TokenMatKey, WildLife } from './interfaces';
@@ -13,14 +23,14 @@ export class Assets {
 	// private readonly token: AbstractMesh;
 	private readonly tile: AbstractMesh;
 	private readonly token: AbstractMesh;
-	constructor(scene: Scene) {
+	constructor(private scene: Scene) {
 		const tile = scene.getMeshById('tile')!;
 		tile.id = 'tile-origin';
 		const token = scene.getMeshById('token')!;
 		token.id = 'token-origin';
-		tile.outlineColor = Color3.Black();
-		tile.outlineWidth = 0.00001;
-		tile.renderOutline = true;
+		// tile.outlineColor = Color3.Black();
+		// tile.outlineWidth = 0.00001;
+		// tile.renderOutline = true;
 		const tokenPosistion = [
 			new Vector3(0, 0.11, 0),
 			new Vector3(-0.2, 0.11, 0.2),
@@ -115,16 +125,19 @@ export class Assets {
 		const tileMatKey =
 			tileInfo.habitats.length == 0 ? 'blank' : (tileInfo.habitats.join('-') as TileMatKey);
 		tile.material = this.tileMat[tileMatKey];
+		tile.metadata = tileInfo;
 		tile.position = position;
 		tile.rotation = new Vector3(0, Tools.ToRadians(tileInfo.rotation), 0);
 		const wildLifeSize = tileInfo.wildlife.length;
 		const startIndex = (1 << (wildLifeSize - 1)) - 1;
-
 		const wildLifeMeshes = tile.getChildMeshes();
 		wildLifeMeshes.forEach((mesh) => mesh.setEnabled(false));
 		tileInfo.wildlife.forEach((v: TokenMatKey, i) => {
 			wildLifeMeshes[startIndex + i].material = this.tokenMat[v];
 			wildLifeMeshes[startIndex + i].setEnabled(true);
+			wildLifeMeshes[startIndex + i].id = id;
+			wildLifeMeshes[startIndex + i].name = name;
+			wildLifeMeshes[startIndex + i].isPickable = false;
 		});
 
 		tile.getChildTransformNodes()[0].rotation = new Vector3(0, -Tools.ToRadians(tileInfo.rotation), 0);

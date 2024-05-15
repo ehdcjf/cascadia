@@ -1,4 +1,4 @@
-import { Scene as _Scene, Engine } from '@babylonjs/core';
+import { Scene as _Scene, ActionManager, Engine } from '@babylonjs/core';
 import { ScenMatadata } from './metadata';
 
 export class Scene extends _Scene {
@@ -6,5 +6,6 @@ export class Scene extends _Scene {
 	constructor(engien: Engine) {
 		super(engien);
 		this.metadata = new ScenMatadata();
+		this.actionManager = new ActionManager(this);
 	}
 }

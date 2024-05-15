@@ -9,14 +9,16 @@ import {
 	PredicateCondition,
 	Color3,
 	Color4,
+	Observable,
 } from '@babylonjs/core';
-import { TileInfo, WildLife } from './interfaces';
+import { TileInfo, TileKey, WildLife } from './interfaces';
 import { tiles } from './data';
 import { numFromName, sleep } from './utils';
 import { Assets } from './assets';
 const positionY = [-3, -1, 1, 3, 5];
 import { Scene } from './scene';
-import { SceneState } from './metadata';
+import { ScenMatadata, SceneState } from './metadata';
+import { ModalEvents } from './action';
 
 /**
 	 *   엣지
@@ -34,7 +36,7 @@ export class Pocket {
 	tiles: (TileInfo | null)[] = [];
 	tileEdges: AbstractMesh[] = [];
 
-	constructor(private scene: Scene, private assets: Assets) {
+	constructor(private scene: Scene, private assets: Assets, private readonly observer: Observable<ModalEvents>) {
 		this.anchor = new TransformNode('pocket-anchor', this.scene);
 		this.anchor.position = new Vector3(100, 100, 100);
 
@@ -57,9 +59,18 @@ export class Pocket {
 		});
 	}
 
-	public cleanEdge() {}
+	public cleanEdge() {
+		this.tileEdges.forEach((mesh) => {
+			mesh.material = this.assets.tokenEdgeMat['none'];
+		});
+		// this.scene.getMeshesById('tile').forEach((mesh) => {
+		// 	mesh.disableEdgesRendering();
+		// });
+	}
 
-	public paintEdge(index: number, color: 'red' | 'yellow' | 'none') {}
+	public paintEdge(index: number, color: 'red' | 'yellow' | 'none') {
+		this.tileEdges[index].material = this.assets.tokenEdgeMat[color];
+	}
 
 	protected setupTokens() {
 		const tokenNums: Record<WildLife, number> = {
@@ -165,7 +176,6 @@ export class Pocket {
 		const tileInfo = this.allTiles.pop()!;
 
 		const tile = this.assets.cloneTile(this.anchor, 'tile', 'tile4', tileInfo, new Vector3(0.5, 5, 0));
-		tile.metadata = tileInfo;
 
 		tile.rotation = new Vector3(Tools.ToRadians(90), 0, 0);
 		tile.scaling = new Vector3(0.7, 0.7, 0.7);
@@ -180,6 +190,37 @@ export class Pocket {
 		}
 		tiles.forEach(async (tile, dest) => {
 			//Set Pick Down Event
+			const actionManager = new ActionManager(this.scene);
+			actionManager.hoverCursor = 'default';
+			tile.actionManager = actionManager;
+			const drawHabitatCondition = new PredicateCondition(
+				actionManager,
+				() => this.scene.metadata.state == SceneState.PICK_TILE
+			);
+			const pickAction = new ExecuteCodeAction(
+				ActionManager.OnPickDownTrigger,
+				(evt) => {
+					const index = numFromName(evt.source.name);
+					this.cleanEdge();
+					this.paintEdge(index, 'yellow');
+					this.scene.metadata.tile = tile.metadata;
+				},
+				drawHabitatCondition
+			);
+
+			const moveInAction = new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, (evt) => {
+				if (this.scene.metadata.state == SceneState.PICK_TILE)
+					actionManager.hoverCursor = 'pointer';
+			});
+
+			const moveOutAction = new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, (evt) => {
+				if (this.scene.metadata.state == SceneState.PICK_TILE)
+					actionManager.hoverCursor = 'default';
+			});
+
+			tile.actionManager!.registerAction(pickAction);
+			tile.actionManager!.registerAction(moveInAction);
+			tile.actionManager!.registerAction(moveOutAction);
 
 			// Set Animation
 			const src = numFromName(tile.name);
@@ -198,6 +239,9 @@ export class Pocket {
 
 			// tile.disableEdgesRendering()
 			tile.name = 'tile' + dest;
+			tile.getChildMeshes().forEach((mesh) => {
+				mesh.name = 'tile' + dest;
+			});
 		});
 	}
 
@@ -210,13 +254,6 @@ export class Pocket {
 		}
 
 		tokens.forEach(async (token, dest) => {
-			token.actionManager = new ActionManager(this.scene);
-			const condition = new PredicateCondition(token.actionManager as ActionManager, () => true);
-			const selectTileAction = new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (_evt) => {
-				console.log(_evt);
-			});
-
-			token.actionManager.registerAction(selectTileAction);
 			const src = numFromName(token.name);
 			const startY = positionY[src];
 			const endY = positionY[dest];

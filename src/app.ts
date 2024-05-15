@@ -9,6 +9,8 @@ import {
 	ArcRotateCamera,
 	Tools,
 	Viewport,
+	PointerEventTypes,
+	Observable,
 } from '@babylonjs/core';
 
 import { Scene } from './scene';
@@ -18,6 +20,7 @@ import { CascadiaActionManager } from './action';
 import { Inspector } from '@babylonjs/inspector';
 import { Assets } from './assets';
 import { ScenMatadata } from './metadata';
+import { Modal } from './modal';
 // (window as any).BABYLON = BABYLON;
 
 // const H = 1.5;
@@ -29,6 +32,8 @@ class App {
 	private board!: Board;
 	private pocket!: Pocket;
 	private action!: CascadiaActionManager;
+	private modal!: Modal;
+	private observer = new Observable();
 	constructor() {
 		this.init();
 	}
@@ -39,10 +44,7 @@ class App {
 
 		await this.createScene();
 
-		const assets = new Assets(this.scene);
-		this.board = new Board(this.scene, assets);
-		this.pocket = new Pocket(this.scene, assets);
-		this.action = new CascadiaActionManager(this.scene, this.board, this.pocket);
+		this.action = new CascadiaActionManager(this.scene);
 
 		this.engine.runRenderLoop(() => {
 			if (this.scene) this.scene.render();
@@ -66,7 +68,7 @@ class App {
 			this.scene
 		);
 		camera.upperBetaLimit = Tools.ToRadians(80);
-		camera.lowerRadiusLimit = 5;
+		camera.lowerRadiusLimit = 11;
 		camera.upperRadiusLimit = 60;
 		const camera2 = new ArcRotateCamera(
 			'camera2',
@@ -83,7 +85,16 @@ class App {
 
 		this.scene.activeCameras?.push(camera);
 		this.scene.activeCameras?.push(camera2);
-		// this.scene.cameraToUseForPointers = camera;
+
+		this.scene.onPointerObservable.add((evt) => {
+			if (evt.type == PointerEventTypes.POINTERMOVE) {
+				if (this.scene.pointerX < window.innerWidth * 0.2) {
+					this.scene.cameraToUseForPointers = camera2;
+				} else {
+					this.scene.cameraToUseForPointers = camera;
+				}
+			}
+		});
 
 		// this.subScene.activeCamera = camera2;
 

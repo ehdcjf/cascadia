@@ -13,16 +13,36 @@ import {
 	Vector3,
 	Animation,
 	PredicateCondition,
+	PointerInfo,
+	Color4,
+	Color3,
+	Observable,
+	PathCursor,
+	Observer,
 } from '@babylonjs/core';
 import { Scene } from './scene';
 
 import { TileInfo } from './interfaces';
 import { Board } from './board';
 import { Pocket } from './pocket';
+import { numFromName } from './utils';
+import { Modal } from './modal';
+import { Assets } from './assets';
+import { SceneState } from './metadata';
+
+export enum ModalEvents {
+	OPEN_TILE_ACTION,
+	TILE_CANCEL_ACTION,
+	TILE_CONFIRM_ACTION,
+	TILE_ROTATE_CCW_ACTION,
+	TILE_ROTATE_CW_ACTION,
+}
 
 export class CascadiaActionManager {
-	private state = 'pick-tile';
-	actionManager: ActionManager;
+	board: Board;
+	pocket: Pocket;
+	modal: Modal;
+	// actionManager: ActionManager;
 	// private tileLine: number | null = null;
 	// private tokenLine: number | null = null;
 	// private selectedTile: TileInfo | null = null;
@@ -35,9 +55,36 @@ export class CascadiaActionManager {
 	// private faintBoard: boolean = true;
 	// private pendings: Record<string, any> = {};
 
-	constructor(private scene: Scene, private board: Board, private pocket: Pocket) {
-		this.actionManager = new ActionManager(this.scene);
-		this.scene.actionManager = this.actionManager;
+	constructor(private scene: Scene) {
+		const assets = new Assets(this.scene);
+		const observerble = new Observable<ModalEvents>();
+		observerble.add((eventType) => {
+			switch (eventType) {
+				case ModalEvents.OPEN_TILE_ACTION:
+					{
+						this.modal.openActionModal();
+					}
+					break;
+
+				case ModalEvents.TILE_CANCEL_ACTION:
+					{
+						this.pocket.cleanEdge();
+						this.scene.metadata.targetTile;
+						const target = this.scene.metadata.targetTile!;
+						target.material = assets.tileMat['blank'];
+						target.getChildMeshes().forEach((mesh) => mesh.setEnabled(false));
+						this.scene.metadata.state = SceneState.PICK_TILE;
+						this.scene.metadata.tile = null;
+						this.scene.metadata.targetTile = null;
+						this.modal.closeActionModal();
+					}
+					break;
+			}
+		});
+
+		this.board = new Board(this.scene, assets, observerble);
+		this.pocket = new Pocket(this.scene, assets, observerble);
+		this.modal = new Modal(this.scene, observerble);
 		// this.scene.onPointerDown = (_evt, _pickInfo) => {
 		// 	const ray = this.scene.createPickingRay(
 		// 		this.scene.pointerX,
@@ -45,19 +92,15 @@ export class CascadiaActionManager {
 		// 		Matrix.Identity(),
 		// 		this.scene.getCameraById('camera2')
 		// 	);
-
 		// 	const hitToken = this.scene.pickWithRay(ray, (mesh) => {
 		// 		return mesh && mesh?.id == 'token';
 		// 	});
-
 		// 	if (hitToken?.hit && hitToken.pickedMesh) {
 		// 		console.log(hitToken);
 		// 		// const pickedMesh = hitToken.pickedMesh;
 		// 		// pickedMesh.visibility = 1;
 		// 	}
-
 		// 	// 주머니에서 타일 선택했을 때
-
 		// 	//
 		// };
 		// this.scene.actionManager = this.
@@ -71,6 +114,26 @@ export class CascadiaActionManager {
 		// 		}
 		// 	});
 		// });
+	}
+
+	//Pocket Tile Pick Down
+	private tilePickDownEvent(eventData: PointerInfo) {
+		if (eventData.type != PointerEventTypes.POINTERDOWN) return;
+		const ray = this.scene.createPickingRay(
+			this.scene.pointerX,
+			this.scene.pointerY,
+			Matrix.Identity(),
+			this.scene.getCameraById('camera2')
+		);
+		const hitTile = this.scene.pickWithRay(ray, (mesh) => {
+			return mesh && mesh?.id == 'tile';
+		});
+
+		if (!hitTile?.hit) return;
+		this.pocket.cleanEdge();
+		const mesh = hitTile.pickedMesh!;
+		const index = numFromName(mesh.name);
+		this.pocket.paintEdge(index, 'red');
 	}
 
 	// private setTileActionButtons() {
