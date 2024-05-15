@@ -69,8 +69,78 @@ export class Board {
 	}
 
 	public setTile(tileInfo: TileInfo, tileName: string, rotation: number) {
-		const mesh = this.scene.getMeshByName(tileName)!;
-		mesh.id = 'habitat';
+		const habitat = this.scene.getMeshByName(tileName)!;
+		habitat.id = 'habitat';
+		////////////////////////////////////////
+		const habitatAnchor = new TransformNode('habitat-anchor', this.scene)!;
+		habitatAnchor.parent = habitat;
+		habitatAnchor.rotation = new Vector3(0, -Tools.ToRadians(rotation), 0);
+
+		const actionManager = new ActionManager(this.scene);
+		actionManager.hoverCursor = 'default';
+		habitat.actionManager = actionManager;
+
+		const drawWildlifeCondition = new PredicateCondition(
+			actionManager,
+			() => this.scene.metadata.state == SceneState.PUT_TOKEN
+		);
+
+		const moveInAction = new ExecuteCodeAction(
+			ActionManager.OnPointerOverTrigger,
+			() => {
+				const wildlife = this.scene.metadata.token as WildLife;
+				const tokenKey = (wildlife + '-active') as TokenKey;
+				if (tileInfo.wildlife.includes(wildlife)) {
+					actionManager.hoverCursor = 'pointer';
+					const token = this.assets.cloneToken(
+						habitatAnchor,
+						'wildlife',
+						tokenKey,
+						tokenKey,
+						new Vector3(0, 0.11, 0)
+					);
+				}
+			},
+			drawWildlifeCondition
+		);
+
+		const moveOutAction = new ExecuteCodeAction(
+			ActionManager.OnPointerOutTrigger,
+			() => {
+				actionManager.hoverCursor = 'default';
+				habitatAnchor.getChildMeshes().forEach((mesh) => {
+					mesh.dispose();
+				});
+			},
+			drawWildlifeCondition
+		);
+
+		const pointerDownAction = new ExecuteCodeAction(
+			ActionManager.OnPickDownTrigger,
+			() => {
+				actionManager.hoverCursor = 'default';
+				this.setToken(tileName, this.scene.metadata.token!);
+				this.scene.metadata.state = SceneState.PICK_TILE;
+				this.scene.metadata.rotation = 0;
+				this.scene.metadata.tile = null;
+				this.scene.metadata.targetTile = null;
+				this.scene.metadata.token = null;
+				habitat.getChildTransformNodes()[0].dispose();
+				habitat.actionManager = null;
+			},
+			drawWildlifeCondition
+		);
+
+		habitat.actionManager.registerAction(moveInAction);
+		habitat.actionManager.registerAction(moveOutAction);
+		habitat.actionManager.registerAction(pointerDownAction);
+
+		// actionManager.hoverCursor = 'default';
+		// blank.actionManager.registerAction(moveInAction);
+		// blank.actionManager.registerAction(moveOutAction);
+		// blank.actionManager.registerAction(pointerDownAction);
+
+		///////////////////////////////////////////////////
 		const tile: Tile = {
 			tileNum: this.mapData.size + 1,
 			placedToken: null,
@@ -82,6 +152,12 @@ export class Board {
 		};
 		this.mapData.set(tileName, tile);
 		this.drawBlank(tileName);
+	}
+
+	private setToken(tileName: string, wildLife: WildLife) {
+		const tile = this.mapData.get(tileName)!;
+		tile.placedToken = wildLife;
+		this.mapData.set(tileName, tile);
 	}
 
 	private getHabitatSides(habitats: Array<Habitat>, rotation: number) {

@@ -34,9 +34,9 @@ export class Modal {
 	private setActionModal() {
 		[
 			['action-cancel', -3, ModalEvents.TILE_CANCEL_ACTION],
-			['action-confirm', -1, ModalEvents.TILE_CANCEL_ACTION],
-			['action-ccw', 1, ModalEvents.TILE_CANCEL_ACTION],
-			['action-cw', 3, ModalEvents.TILE_CANCEL_ACTION],
+			['action-confirm', -1, ModalEvents.TILE_CONFIRM_ACTION],
+			['action-ccw', 1, ModalEvents.TILE_ROTATE_CCW_ACTION],
+			['action-cw', 3, ModalEvents.TILE_ROTATE_CW_ACTION],
 		].forEach((v) => {
 			const [meshId, positionX, event] = v as [string, number, number];
 			const actionButton = this.scene.getMeshById(meshId)!;

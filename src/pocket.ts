@@ -203,7 +203,7 @@ export class Pocket {
 					const index = numFromName(evt.source.name);
 					this.cleanEdge();
 					this.paintEdge(index, 'yellow');
-					this.scene.metadata.tile = tile.metadata;
+					this.scene.metadata.tile = { ...tile.metadata, tileNum: dest };
 				},
 				drawHabitatCondition
 			);

@@ -148,6 +148,9 @@ export class Assets {
 	cloneToken(anchor: TransformNode, id: string, name: string, mat: TokenMatKey, position: Vector3) {
 		const token = this.token.clone(name, anchor)!;
 		token.id = id;
+		if (id != 'token') {
+			token.isPickable = false;
+		}
 		token.material = this.tokenMat[mat];
 		token.position = position;
 		token.setEnabled(true);

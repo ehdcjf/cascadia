@@ -22,7 +22,7 @@ import {
 } from '@babylonjs/core';
 import { Scene } from './scene';
 
-import { TileInfo } from './interfaces';
+import { TileInfo, TokenKey } from './interfaces';
 import { Board } from './board';
 import { Pocket } from './pocket';
 import { numFromName } from './utils';
@@ -69,7 +69,6 @@ export class CascadiaActionManager {
 				case ModalEvents.TILE_CANCEL_ACTION:
 					{
 						this.pocket.cleanEdge();
-						this.scene.metadata.targetTile;
 						const target = this.scene.metadata.targetTile!;
 						target.material = assets.tileMat['blank'];
 						target.getChildMeshes().forEach((mesh) => mesh.setEnabled(false));
@@ -77,6 +76,60 @@ export class CascadiaActionManager {
 						this.scene.metadata.tile = null;
 						this.scene.metadata.targetTile = null;
 						this.modal.closeActionModal();
+					}
+					break;
+				case ModalEvents.TILE_CONFIRM_ACTION:
+					{
+						// this.pocket.cleanEdge();
+						const tileName = this.scene.metadata.targetTile!.name;
+						const tileNum = this.scene.metadata.tile!.tileNum;
+						this.board.setTile(
+							this.scene.metadata.tile!,
+							tileName,
+							this.scene.metadata.rotation
+						);
+						this.scene.metadata.state = SceneState.PUT_TOKEN;
+						const token = this.scene.getMeshByName('token' + tileNum)!;
+						const tokenName = token.metadata;
+						const tokenMat = (tokenName + '-active') as TokenKey;
+						this.scene.metadata.token = tokenName;
+						token.material = assets.tokenMat[tokenMat];
+						// this.scene.metadata.tile = null;
+						// this.scene.metadata.targetTile = null;
+						this.modal.closeActionModal();
+					}
+					break;
+				case ModalEvents.TILE_ROTATE_CCW_ACTION:
+					{
+						this.scene.metadata.rotation -= 60;
+						const habatat = this.scene.metadata.targetTile!;
+						habatat.rotation = new Vector3(
+							0,
+							Tools.ToRadians(this.scene.metadata.rotation),
+							0
+						);
+						habatat.getChildTransformNodes()[0].rotation = new Vector3(
+							0,
+							-Tools.ToRadians(this.scene.metadata.rotation),
+							0
+						);
+					}
+
+					break;
+				case ModalEvents.TILE_ROTATE_CW_ACTION:
+					{
+						this.scene.metadata.rotation += 60;
+						const habatat = this.scene.metadata.targetTile!;
+						habatat.rotation = new Vector3(
+							0,
+							Tools.ToRadians(this.scene.metadata.rotation),
+							0
+						);
+						habatat.getChildTransformNodes()[0].rotation = new Vector3(
+							0,
+							-Tools.ToRadians(this.scene.metadata.rotation),
+							0
+						);
 					}
 					break;
 			}
