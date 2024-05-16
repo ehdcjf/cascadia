@@ -17,7 +17,7 @@ import { Habitat, Tile, TileInfo, TileKey, TokenKey, WildLife } from './interfac
 import { TileScoring } from './score/tile';
 import { Assets } from './assets';
 import { SceneState } from './metadata';
-import { ModalEvents } from './action';
+import { ActionObserver, ModalEvents } from './observer';
 const rotationIndexes = {
 	positive: [0, 60, 120, 180, 240, 300],
 	negative: [0, -300, -240, -180, -120, -60],
@@ -35,7 +35,7 @@ export class Board {
 	constructor(
 		protected scene: Scene,
 		private readonly assets: Assets,
-		private readonly observer: Observable<ModalEvents>
+		private readonly observer: ActionObserver
 	) {
 		this.anchor = new TransformNode('board-anchor', this.scene);
 		this.init();
@@ -134,11 +134,6 @@ export class Board {
 		habitat.actionManager.registerAction(moveInAction);
 		habitat.actionManager.registerAction(moveOutAction);
 		habitat.actionManager.registerAction(pointerDownAction);
-
-		// actionManager.hoverCursor = 'default';
-		// blank.actionManager.registerAction(moveInAction);
-		// blank.actionManager.registerAction(moveOutAction);
-		// blank.actionManager.registerAction(pointerDownAction);
 
 		///////////////////////////////////////////////////
 		const tile: Tile = {
@@ -307,7 +302,7 @@ export class Board {
 						actionManager.hoverCursor = 'default';
 						this.scene.metadata.state = SceneState.TILE_ACTION;
 						this.scene.metadata.targetTile = blank;
-						this.observer.notifyObservers(ModalEvents.OPEN_TILE_ACTION);
+						this.observer.modal.notifyObservers(ModalEvents.OPEN_TILE_ACTION);
 					},
 					drawHabitatCondition
 				);

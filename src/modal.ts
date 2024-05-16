@@ -12,13 +12,15 @@ import { SceneState } from './metadata';
 import { Scene } from './scene';
 import { Board } from './board';
 import { Pocket } from './pocket';
-import { ModalEvents } from './action';
+import { ModalEvents } from './observer';
+import { ActionObserver } from './observer';
 
 export class Modal {
 	readonly ACTION_TAG = 'ACTION';
+	readonly ALL_DUPLICATE_TOEKN_TAG = 'ALL_DUPLICATE_TOEKN_TAG';
 	anchor: TransformNode;
 
-	constructor(private scene: Scene, private readonly observable: Observable<ModalEvents>) {
+	constructor(private scene: Scene, private readonly observable: ActionObserver) {
 		this.anchor = new TransformNode('modal-anchor', this.scene);
 		this.anchor.parent = this.scene.getCameraByName('camera')!;
 
@@ -26,9 +28,10 @@ export class Modal {
 		// 	this.anchor.position.copyFrom(this.scene.getCameraByName('camera')!.position);
 		// });
 		this.setActionModal();
-		// this.scene.meshes.forEach((mesh) => {
-		// 	console.log(mesh.id);
-		// });
+		this.setAllDuplicateTokenModal();
+		this.scene.meshes.forEach((mesh) => {
+			console.log(mesh.id);
+		});
 	}
 
 	private setActionModal() {
@@ -47,10 +50,30 @@ export class Modal {
 			actionButton.parent = this.anchor;
 			const actionManager = new ActionManager(this.scene);
 			const action = new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (evt) => {
-				this.observable.notifyObservers(event);
+				this.observable.modal.notifyObservers(event);
 			});
 			actionManager.registerAction(action);
 			actionButton.actionManager = actionManager;
+		});
+	}
+
+	private setAllDuplicateTokenModal() {
+		const main = this.scene.getMeshById('all-duplicate-token')!;
+		Tags.EnableFor(main);
+
+		const tokenText = [
+			this.scene.getMeshById('all-duplicate-token-bear')!,
+			this.scene.getMeshById('all-duplicate-token-elk')!,
+			this.scene.getMeshById('all-duplicate-token-fox')!,
+			this.scene.getMeshById('all-duplicate-token-hawk')!,
+			this.scene.getMeshById('all-duplicate-token-salmon')!,
+		].forEach((mesh) => {
+			const wildlife = mesh.id.match(/(?:[^-]+-){3}([^-]+)/)![1];
+			const tag = this.ALL_DUPLICATE_TOEKN_TAG + '-' + wildlife;
+			Tags.EnableFor(mesh);
+			Tags.AddTagsTo(main, tag);
+			Tags.AddTagsTo(mesh, tag);
+			console.log(wildlife);
 		});
 	}
 

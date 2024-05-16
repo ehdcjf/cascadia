@@ -28,15 +28,8 @@ import { Pocket } from './pocket';
 import { numFromName } from './utils';
 import { Modal } from './modal';
 import { Assets } from './assets';
-import { SceneState } from './metadata';
-
-export enum ModalEvents {
-	OPEN_TILE_ACTION,
-	TILE_CANCEL_ACTION,
-	TILE_CONFIRM_ACTION,
-	TILE_ROTATE_CCW_ACTION,
-	TILE_ROTATE_CW_ACTION,
-}
+import { SceneState, ScenMatadata } from './metadata';
+import { ActionObserver, ModalEvents } from './observer';
 
 export class CascadiaActionManager {
 	board: Board;
@@ -57,8 +50,14 @@ export class CascadiaActionManager {
 
 	constructor(private scene: Scene) {
 		const assets = new Assets(this.scene);
-		const observerble = new Observable<ModalEvents>();
-		observerble.add((eventType) => {
+		const metadata = new ScenMatadata();
+		const observers = new ActionObserver();
+
+		this.board = new Board(this.scene, assets, observers);
+		this.pocket = new Pocket(this.scene, assets, observers);
+		this.modal = new Modal(this.scene, observers);
+
+		observers.modal.add((eventType) => {
 			switch (eventType) {
 				case ModalEvents.OPEN_TILE_ACTION:
 					{
@@ -80,17 +79,19 @@ export class CascadiaActionManager {
 					break;
 				case ModalEvents.TILE_CONFIRM_ACTION:
 					{
-						// this.pocket.cleanEdge();
-						const tileName = this.scene.metadata.targetTile!.name;
 						const tileNum = this.scene.metadata.tile!.tileNum;
+						const token = this.scene.getMeshByName('token' + tileNum)!;
+						const tokenName = token.metadata;
+
+						const tileName = this.scene.metadata.targetTile!.name;
+
 						this.board.setTile(
 							this.scene.metadata.tile!,
 							tileName,
 							this.scene.metadata.rotation
 						);
 						this.scene.metadata.state = SceneState.PUT_TOKEN;
-						const token = this.scene.getMeshByName('token' + tileNum)!;
-						const tokenName = token.metadata;
+
 						const tokenMat = (tokenName + '-active') as TokenKey;
 						this.scene.metadata.token = tokenName;
 						token.material = assets.tokenMat[tokenMat];
@@ -135,9 +136,6 @@ export class CascadiaActionManager {
 			}
 		});
 
-		this.board = new Board(this.scene, assets, observerble);
-		this.pocket = new Pocket(this.scene, assets, observerble);
-		this.modal = new Modal(this.scene, observerble);
 		// this.scene.onPointerDown = (_evt, _pickInfo) => {
 		// 	const ray = this.scene.createPickingRay(
 		// 		this.scene.pointerX,
@@ -167,26 +165,6 @@ export class CascadiaActionManager {
 		// 		}
 		// 	});
 		// });
-	}
-
-	//Pocket Tile Pick Down
-	private tilePickDownEvent(eventData: PointerInfo) {
-		if (eventData.type != PointerEventTypes.POINTERDOWN) return;
-		const ray = this.scene.createPickingRay(
-			this.scene.pointerX,
-			this.scene.pointerY,
-			Matrix.Identity(),
-			this.scene.getCameraById('camera2')
-		);
-		const hitTile = this.scene.pickWithRay(ray, (mesh) => {
-			return mesh && mesh?.id == 'tile';
-		});
-
-		if (!hitTile?.hit) return;
-		this.pocket.cleanEdge();
-		const mesh = hitTile.pickedMesh!;
-		const index = numFromName(mesh.name);
-		this.pocket.paintEdge(index, 'red');
 	}
 
 	// private setTileActionButtons() {

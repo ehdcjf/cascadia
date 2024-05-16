@@ -18,7 +18,7 @@ import { Assets } from './assets';
 const positionY = [-3, -1, 1, 3, 5];
 import { Scene } from './scene';
 import { ScenMatadata, SceneState } from './metadata';
-import { ModalEvents } from './action';
+import { ActionObserver } from './observer';
 
 /**
 	 *   엣지
@@ -36,7 +36,7 @@ export class Pocket {
 	tiles: (TileInfo | null)[] = [];
 	tileEdges: AbstractMesh[] = [];
 
-	constructor(private scene: Scene, private assets: Assets, private readonly observer: Observable<ModalEvents>) {
+	constructor(private scene: Scene, private assets: Assets, private readonly observer: ActionObserver) {
 		this.anchor = new TransformNode('pocket-anchor', this.scene);
 		this.anchor.position = new Vector3(100, 100, 100);
 
@@ -193,11 +193,11 @@ export class Pocket {
 			const actionManager = new ActionManager(this.scene);
 			actionManager.hoverCursor = 'default';
 			tile.actionManager = actionManager;
-			const drawHabitatCondition = new PredicateCondition(
+			const condition = new PredicateCondition(
 				actionManager,
 				() => this.scene.metadata.state == SceneState.PICK_TILE
 			);
-			const pickAction = new ExecuteCodeAction(
+			const pickTileAction = new ExecuteCodeAction(
 				ActionManager.OnPickDownTrigger,
 				(evt) => {
 					const index = numFromName(evt.source.name);
@@ -205,22 +205,22 @@ export class Pocket {
 					this.paintEdge(index, 'yellow');
 					this.scene.metadata.tile = { ...tile.metadata, tileNum: dest };
 				},
-				drawHabitatCondition
+				condition
 			);
 
-			const moveInAction = new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, (evt) => {
+			const pointerOverAction = new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, (evt) => {
 				if (this.scene.metadata.state == SceneState.PICK_TILE)
 					actionManager.hoverCursor = 'pointer';
 			});
 
-			const moveOutAction = new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, (evt) => {
+			const pointerOutAction = new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, (evt) => {
 				if (this.scene.metadata.state == SceneState.PICK_TILE)
 					actionManager.hoverCursor = 'default';
 			});
 
-			tile.actionManager!.registerAction(pickAction);
-			tile.actionManager!.registerAction(moveInAction);
-			tile.actionManager!.registerAction(moveOutAction);
+			tile.actionManager!.registerAction(pickTileAction);
+			tile.actionManager!.registerAction(pointerOverAction);
+			tile.actionManager!.registerAction(pointerOutAction);
 
 			// Set Animation
 			const src = numFromName(tile.name);
