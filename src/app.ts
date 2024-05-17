@@ -8,6 +8,7 @@ import {
 	EngineFactory,
 	ExecuteCodeAction,
 	HemisphericLight,
+	Observable,
 	PointerEventTypes,
 	Scene,
 	SceneLoader,
@@ -32,6 +33,14 @@ class App {
 
 		await this.createScene();
 
+		const actionManager = new ActionManager(this.scene);
+
+		const someAction = new ExecuteCodeAction(ActionManager.OnPickDownTrigger, () => {});
+
+		const x = new Observable();
+
+		x.add(() => {});
+
 		this.engine.runRenderLoop(() => {
 			if (this.scene) this.scene.render();
 		});
@@ -45,6 +54,7 @@ class App {
 		this.scene = new Scene(this.engine);
 		this.setupCamera();
 		this.setupLight();
+
 		await this.loadAssetAsync();
 	}
 	async loadAssetAsync() {

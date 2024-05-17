@@ -1,22 +1,33 @@
+import { Observable, Scene, TransformNode, Vector3 } from '@babylonjs/core';
 import { tiles } from '../data';
-import { WildLife } from '../interfaces';
+import { TileInfo, WildLife, PocketTileInfo } from '../interfaces';
 import { PocketTile } from './tile';
 import { PocketToken } from './token';
+import { Assets } from '../assets/index';
+import { TileMesh } from '../assets/tile';
 
 export class Pocket {
-	private allTiles = tiles;
-	private allTokens: WildLife[] = [];
-	private tiles: PocketTile[] = [];
-	private tokens: PocketToken[] = [];
+	private reserveTiles: TileInfo[] = [];
+	private reserveTokens: WildLife[] = [];
+	private activeTiles: PocketTile[] = [];
+	private activeTokens: PocketToken[] = [];
+	private pocketAnchor: TransformNode;
+	constructor(
+		scene: Scene,
+		private pocketTileObserveble: Observable<PocketTileInfo>,
+		private pocketTokenObserveble: Observable<any>
+	) {
+		this.pocketAnchor = new TransformNode('pocket-anchor', scene);
+		this.setup();
+	}
 
-	constructor() {
-		this.setupTiles();
-		this.setupTokens();
+	private createTile(tileInfo: TileInfo) {
+		const tile = Assets.getInstance().tile;
+		tile.anchor = this.pocketAnchor;
+		return new PocketTile(tile, tileInfo, this.pocketTileObserveble);
 	}
-	private setupTiles() {
-		this.allTiles = this.suffle(tiles);
-	}
-	private setupTokens() {
+
+	private setup() {
 		const tokenNums: Record<WildLife, number> = {
 			bear: 20,
 			salmon: 20,
@@ -24,17 +35,14 @@ export class Pocket {
 			elk: 20,
 			fox: 20,
 		};
-		const tokens: WildLife[] = [];
+		const allTokens: WildLife[] = [];
 		for (const tokenName in tokenNums) {
 			for (let i = 0; i < tokenNums[tokenName as WildLife]; i++) {
-				tokens.push(tokenName as WildLife);
+				allTokens.push(tokenName as WildLife);
 			}
 		}
-		this.suffleTokens();
-	}
-
-	private suffleTokens(popedTokens = [] as WildLife[]) {
-		this.allTokens = this.suffle([...this.allTokens, ...popedTokens]);
+		this.reserveTokens = this.suffle([...this.reserveTokens]);
+		this.reserveTiles = this.suffle(tiles);
 	}
 
 	protected suffle<T>(originArray: Array<T>): Array<T> {
@@ -46,5 +54,10 @@ export class Pocket {
 		}
 
 		return array;
+	}
+
+	public selectOnly(index: number) {
+		this.activeTiles.forEach((tile) => tile.hideEdge());
+		this.activeTiles[index].showEdge();
 	}
 }
