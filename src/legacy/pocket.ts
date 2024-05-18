@@ -11,10 +11,10 @@ import {
 	Color4,
 	Observable,
 } from '@babylonjs/core';
-import { TileInfo, TileKey, WildLife } from './interfaces';
-import { tiles } from './data';
-import { numFromName, sleep } from './utils';
-import { Assets } from './assets';
+import { TileInfo, TileKey, WildLife } from '../interfaces';
+import { tiles } from '../data';
+import { numFromName, sleep } from '../utils';
+import { Assets } from '../assets';
 const positionY = [-3, -1, 1, 3, 5];
 import { Scene } from './scene';
 import { ScenMatadata, SceneState } from './metadata';

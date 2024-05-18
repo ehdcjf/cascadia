@@ -16,6 +16,8 @@ import {
 	Vector3,
 	Viewport,
 } from '@babylonjs/core';
+import { Assets } from './assets';
+import { Mediator } from './mediator';
 
 class App {
 	private engine!: Engine;
@@ -24,7 +26,6 @@ class App {
 
 	constructor() {
 		this.init();
-		Inspector.Show(this.scene, {});
 	}
 
 	private async init() {
@@ -33,13 +34,8 @@ class App {
 
 		await this.createScene();
 
-		const actionManager = new ActionManager(this.scene);
-
-		const someAction = new ExecuteCodeAction(ActionManager.OnPickDownTrigger, () => {});
-
-		const x = new Observable();
-
-		x.add(() => {});
+		const mediator = new Mediator(this.scene);
+		Inspector.Show(this.scene, {});
 
 		this.engine.runRenderLoop(() => {
 			if (this.scene) this.scene.render();
@@ -55,14 +51,16 @@ class App {
 		this.setupCamera();
 		this.setupLight();
 
-		await this.loadAssetAsync();
+		await Assets.setup(this.scene);
+		await this.scene.whenReadyAsync();
+		this.engine.hideLoadingUI();
 	}
-	async loadAssetAsync() {
-		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia-final.glb', this.scene);
-		assets.meshes.forEach((mesh) => {
-			mesh.setEnabled(false);
-		});
-	}
+	// async loadAssetAsync() {
+	// 	const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia-final.glb', this.scene);
+	// 	assets.meshes.forEach((mesh) => {
+	// 		mesh.setEnabled(false);
+	// 	});
+	// }
 
 	private setupCamera() {
 		const boardCam = new ArcRotateCamera(

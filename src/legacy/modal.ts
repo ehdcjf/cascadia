@@ -10,8 +10,8 @@ import {
 } from '@babylonjs/core';
 import { SceneState } from './metadata';
 import { Scene } from './scene';
-import { Board } from './board';
-import { Pocket } from './pocket';
+import { Board } from '../board';
+import { Pocket } from '../pocket';
 import { ModalEvents } from './observer';
 import { ActionObserver } from './observer';
 

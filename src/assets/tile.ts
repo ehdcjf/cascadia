@@ -1,4 +1,14 @@
-import { AbstractMesh, TransformNode, Vector3, Tools, ActionManager, Scene, ExecuteCodeAction } from '@babylonjs/core';
+import {
+	AbstractMesh,
+	TransformNode,
+	Vector3,
+	Tools,
+	ActionManager,
+	Scene,
+	ExecuteCodeAction,
+	Color4,
+	Color3,
+} from '@babylonjs/core';
 import { TileInfo, TileKey, TokenKey, WildLife } from '../interfaces';
 import { Assets } from '.';
 export class TileMesh {
@@ -7,17 +17,16 @@ export class TileMesh {
 	private _anchor: TransformNode;
 	private _wildlife: AbstractMesh[] = [];
 
-	constructor(scene: Scene, originTile: AbstractMesh, originTileEdge: AbstractMesh, originToken: AbstractMesh) {
-		this._tile = originTile.clone('tile', null)!;
+	constructor(anchor: TransformNode) {
+		this._tile = Assets.getTile(anchor);
 		this._tile.setEnabled(true);
+		this._tile.parent = anchor;
+		this._tile.actionManager = Assets.getActionManger();
+		this._anchor = Assets.getTransformNode('tile-anchor');
+		this._anchor.parent = this._tile;
 
-		this._tile.actionManager = new ActionManager(scene);
-		this._tile.scalingDeterminant = 2;
-		this._anchor = new TransformNode('tile-anchor', scene);
-		this.anchor.parent = this._tile;
-
-		this._edge = originTileEdge.clone('edge', this.anchor)!;
-		this._edge.material = Assets.getInstance().edgeMat['none'];
+		this._edge = Assets.getTilEdge(this._anchor);
+		this._edge.material = Assets.getEdgeMat('none');
 		this._edge.setEnabled(true);
 		this._edge.isPickable = false;
 
@@ -29,16 +38,12 @@ export class TileMesh {
 			[-0.3 * Math.cos(Math.PI / 6), 0.11, 0.15],
 			[0.3 * Math.cos(Math.PI / 6), 0.11, 0.15],
 		].forEach((pos) => {
-			const token = originToken.clone(`plane`, this._anchor)!;
+			const token = Assets.getToken(this._anchor);
 			token.position = new Vector3(...pos);
 			token.scaling = new Vector3(0.5, 0.1, 0.5);
 			token.isPickable = false;
 			this._wildlife.push(token);
 		});
-	}
-
-	set anchor(tfNode: TransformNode) {
-		this._tile.parent = tfNode;
 	}
 
 	set material(tileInfo: Omit<TileInfo, 'tileNum' | 'rotation'>) {
@@ -48,9 +53,13 @@ export class TileMesh {
 		const startIndex = (1 << (wildLifeSize - 1)) - 1;
 		this._wildlife.forEach((mesh) => mesh.setEnabled(false));
 		tileInfo.wildlife.forEach((v: WildLife, i) => {
-			this._wildlife[startIndex + i].material = Assets.getInstance().tokenMat[v];
+			this._wildlife[startIndex + i].material = Assets.getTokenMat(v);
 			this._wildlife[startIndex + i].setEnabled(true);
 		});
+	}
+
+	get scene() {
+		return this._tile._scene;
 	}
 
 	get position() {
@@ -75,22 +84,28 @@ export class TileMesh {
 	}
 
 	set edge(color: 'yellow' | 'none') {
-		this._edge.material = Assets.getInstance().edgeMat[color];
+		this._edge.material = Assets.getEdgeMat(color);
 	}
 
-	rotateY(number: number) {
+	set rotateY(number: number) {
 		// if (Math.abs(number) >= 360) number %= 360;
 		this._tile.rotation = new Vector3(0, Tools.ToRadians(number), 0);
 		this._anchor.rotation = new Vector3(0, -Tools.ToRadians(number), 0);
 	}
 
 	public clean() {
-		this._tile.material = Assets.getInstance().tileMat['blank'];
+		this._tile.material = Assets.getTileMat('blank');
 		this._wildlife.forEach((mesh) => mesh.setEnabled(false));
-		this.rotateY(0);
+		this.rotateY = 0;
 	}
 
 	public dispose() {
 		this._tile.dispose();
+	}
+
+	public renderEdges() {
+		this._tile.enableEdgesRendering();
+		this._tile.edgesColor = Color4.FromColor3(Color3.Gray());
+		this._tile.edgesWidth = 1;
 	}
 }

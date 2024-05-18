@@ -11,7 +11,7 @@ import {
 } from '@babylonjs/core';
 import { Scene } from './scene';
 
-import { TileInfo, TileKey as TileMatKey, TokenKey as TokenMatKey, WildLife } from './interfaces';
+import { TileInfo, TileKey as TileMatKey, TokenKey as TokenMatKey, WildLife } from '../interfaces';
 
 export class Assets {
 	public readonly tileMat: Record<TileMatKey, Material> = {} as Record<TileMatKey, Material>;

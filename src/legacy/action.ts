@@ -22,12 +22,12 @@ import {
 } from '@babylonjs/core';
 import { Scene } from './scene';
 
-import { TileInfo, TokenKey } from './interfaces';
-import { Board } from './board';
-import { Pocket } from './pocket';
-import { numFromName } from './utils';
-import { Modal } from './modal';
-import { Assets } from './assets';
+import { TileInfo, TokenKey } from '../interfaces';
+import { Board } from '../board';
+import { Pocket } from '../pocket';
+import { numFromName } from '../utils';
+import { Modal } from '../modal';
+import { Assets } from '../assets';
 import { SceneState, ScenMatadata } from './metadata';
 import { ActionObserver, ModalEvents } from './observer';
 

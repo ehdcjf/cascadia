@@ -5,26 +5,22 @@ import { PocketTile } from './tile';
 import { PocketToken } from './token';
 import { Assets } from '../assets/index';
 import { TileMesh } from '../assets/tile';
-
+import type { Mediator } from '../mediator';
 export class Pocket {
 	private reserveTiles: TileInfo[] = [];
 	private reserveTokens: WildLife[] = [];
 	private activeTiles: PocketTile[] = [];
 	private activeTokens: PocketToken[] = [];
 	private pocketAnchor: TransformNode;
-	constructor(
-		scene: Scene,
-		private pocketTileObserveble: Observable<PocketTileInfo>,
-		private pocketTokenObserveble: Observable<any>
-	) {
-		this.pocketAnchor = new TransformNode('pocket-anchor', scene);
+	constructor(private scene: Scene, private mediator: Mediator) {
+		this.pocketAnchor = new TransformNode('pocket-anchor', this.scene);
+		this.pocketAnchor.position = new Vector3(100, 100, 100);
 		this.setup();
 	}
 
 	private createTile(tileInfo: TileInfo) {
-		const tile = Assets.getInstance().tile;
-		tile.anchor = this.pocketAnchor;
-		return new PocketTile(tile, tileInfo, this.pocketTileObserveble);
+		const tile = new TileMesh(this.pocketAnchor);
+		return new PocketTile(this.scene, tile, tileInfo, this.mediator);
 	}
 
 	private setup() {
@@ -43,6 +39,15 @@ export class Pocket {
 		}
 		this.reserveTokens = this.suffle([...this.reserveTokens]);
 		this.reserveTiles = this.suffle(tiles);
+
+		while (this.activeTiles.length < 4) {
+			const tileInfo = this.reserveTiles.shift()!;
+			const tile = this.createTile(tileInfo);
+			this.activeTiles.push(tile);
+		}
+		this.activeTiles.forEach((tile, index) => {
+			tile.slideDown(index);
+		});
 	}
 
 	protected suffle<T>(originArray: Array<T>): Array<T> {
@@ -56,8 +61,12 @@ export class Pocket {
 		return array;
 	}
 
-	public selectOnly(index: number) {
+	public selectTile(index: number) {
 		this.activeTiles.forEach((tile) => tile.hideEdge());
 		this.activeTiles[index].showEdge();
+	}
+
+	public cleanAllTiles() {
+		this.activeTiles.forEach((tile) => tile.hideEdge());
 	}
 }

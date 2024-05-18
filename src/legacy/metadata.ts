@@ -1,5 +1,5 @@
 import { AbstractMesh } from '@babylonjs/core';
-import { TileInfo, TileKey, WildLife } from './interfaces';
+import { TileInfo, TileKey, WildLife } from '../interfaces';
 
 export enum SceneState {
 	PICK_TILE,
