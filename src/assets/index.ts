@@ -18,6 +18,9 @@ export class Assets {
 	private originTile: AbstractMesh;
 	private originTileEdge: AbstractMesh;
 	private originToken: AbstractMesh;
+	private originCancle: AbstractMesh;
+	private originConfirm: AbstractMesh;
+	private originClose: AbstractMesh;
 
 	public readonly tileMat: Record<TileMatKey, Material> = {} as Record<TileMatKey, Material>;
 	public readonly tokenMat: Record<TokenMatKey, Material> = {} as Record<TokenMatKey, Material>;
@@ -27,6 +30,9 @@ export class Assets {
 		this.originTile = this.scene.getMeshById('tile')!;
 		this.originTileEdge = this.scene.getMeshById('tile-edge')!;
 		this.originToken = this.scene.getMeshById('token')!;
+		this.originCancle = this.scene.getMeshById('cancel')!;
+		this.originConfirm = this.scene.getMeshById('confirm')!;
+		this.originClose = this.scene.getMeshById('close')!;
 		(
 			[
 				'desert-lake',
@@ -94,7 +100,9 @@ export class Assets {
 			const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia-final.glb', scene);
 			assets.meshes.forEach((mesh) => {
 				mesh.setEnabled(false);
+				console.log(mesh.id);
 			});
+
 			Assets.instance = new Assets(scene);
 		}
 	}
@@ -124,7 +132,17 @@ export class Assets {
 	}
 
 	public static getToken(anchor: TransformNode) {
-		return Assets.instance.originTile.clone('token', anchor)!;
+		return Assets.instance.originToken.clone('token', anchor)!;
+	}
+
+	public static getCancel(anchor: TransformNode) {
+		return Assets.instance.originCancle.clone('cancel', anchor)!;
+	}
+	public static getConfirm(anchor: TransformNode) {
+		return Assets.instance.originConfirm.clone('confirm', anchor)!;
+	}
+	public static getClose(anchor: TransformNode) {
+		return Assets.instance.originClose.clone('close', anchor)!;
 	}
 
 	public static getTokenMat(key: TokenMatKey) {

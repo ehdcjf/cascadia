@@ -3,7 +3,7 @@ import { Assets } from '../assets/index';
 import { BoardTile } from './tile';
 import { Mediator } from '../mediator';
 import { startingTiles } from '../data';
-import { TileInfo } from '../interfaces';
+import { TileInfo, WildLife } from '../interfaces';
 import { TileMesh } from '../assets/tile';
 const H = 1.5;
 const W = Math.cos(Math.PI / 6);
@@ -13,6 +13,7 @@ export class Board {
 	constructor(private scene: Scene, private mediator: Mediator) {
 		this.boardAnchor = new TransformNode('board-anchor', this.scene);
 		this.setup();
+		// this.faint();
 	}
 
 	private setup() {
@@ -26,7 +27,10 @@ export class Board {
 			const tileInfo = startingTile[i];
 			const position = this.tileVectorFromQRS(q, r);
 			const tileID = this.tileIDFromQRS(q, r, s);
-			const tile = this.createTile(tileID, position, tileInfo);
+			const tile = this.createTile(tileID, position);
+			tile.paint(tileInfo);
+			tile.rotate(tileInfo.rotation);
+			tile.setHabitat();
 			this.tiles.set(tileID, tile);
 		});
 
@@ -46,14 +50,43 @@ export class Board {
 			});
 	}
 
-	// confirmTile(tileID:string){
-	// 	const neighbor =
+	public faint() {
+		this.boardAnchor.getChildMeshes(false).forEach((mesh) => {
+			mesh.visibility = 0.2;
+		});
+	}
 
-	// }
+	public clear() {
+		this.boardAnchor.getChildMeshes(false).forEach((mesh) => {
+			mesh.visibility = 1;
+		});
+	}
+
+	confirmTile(tileID: string) {
+		const target = this.tiles.get(tileID)!;
+		target.setHabitat();
+	}
+
+	confirmToken(id: string, wildlife: WildLife) {
+		const targetTile = this.tiles.get(id)!;
+		targetTile.placedToken = wildlife;
+		targetTile.wildlife = [];
+	}
 
 	public cleanTile(id: string) {
 		const targetTile = this.tiles.get(id)!;
 		targetTile.clean();
+	}
+
+	public drawBlank(id: string) {
+		this.getNeighborhoodFromTileID(id)
+			.filter((tile) => !this.tiles.has(tile))
+			.forEach((tileID) => {
+				const { q, r, s } = this.qrsFromTileID(tileID);
+				const position = this.tileVectorFromQRS(q, r);
+				const tile = this.createTile(tileID, position);
+				this.tiles.set(tileID, tile);
+			});
 	}
 
 	public rotateTile(id: string, value: number) {
@@ -61,15 +94,23 @@ export class Board {
 		targetTile.rotate(value);
 	}
 
-	private createTile(id: string, position: Vector3, tileInfo?: TileInfo) {
+	public checkValidToken(wildlife: WildLife) {
+		return [...this.tiles.values()]
+			.reduce((r, v) => {
+				v.wildlife.forEach((wildlife) => r.add(wildlife));
+				return r;
+			}, new Set<WildLife>())
+			.has(wildlife);
+	}
+
+	private createTile(id: string, position: Vector3) {
 		const tile = new TileMesh(this.boardAnchor);
-		return new BoardTile(tile, id, position, this.mediator, tileInfo);
+		return new BoardTile(tile, id, position, this.mediator);
 	}
 
 	private tileVectorFromQRS(q: number, r: number) {
 		const column = q + (r - (r & 1)) / 2;
 		const row = r;
-
 		const offset = row % 2 == 0 ? 0 : W;
 		const x = offset + 2 * W * column;
 		const z = row * H;

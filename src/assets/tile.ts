@@ -20,7 +20,6 @@ export class TileMesh {
 	constructor(anchor: TransformNode) {
 		this._tile = Assets.getTile(anchor);
 		this._tile.setEnabled(true);
-		this._tile.parent = anchor;
 		this._tile.actionManager = Assets.getActionManger();
 		this._anchor = Assets.getTransformNode('tile-anchor');
 		this._anchor.parent = this._tile;
@@ -56,6 +55,10 @@ export class TileMesh {
 			this._wildlife[startIndex + i].material = Assets.getTokenMat(v);
 			this._wildlife[startIndex + i].setEnabled(true);
 		});
+	}
+
+	get anchor() {
+		return this._anchor;
 	}
 
 	get scene() {

@@ -76,7 +76,8 @@ export class PocketTile {
 	// 아래로 내려가는 애니메이션 작동
 	async slideDown(destIndex: number) {
 		this._index = destIndex;
-		const src = this._tileMesh.position.y;
+
+		const src = this._tileMesh.position._y;
 		const dest = slideDownY[destIndex];
 		await Animation.CreateAndStartAnimation(
 			'tile-slide-down',

@@ -75,18 +75,19 @@ export abstract class BaseModal {
 	constructor(parent: TransformNode) {
 		this.anchor = Assets.getTransformNode('modal-anchor');
 		this.anchor.parent = parent;
-		this.hide();
 	}
-	show() {
+
+	open() {
 		this.anchor.setEnabled(true);
 	}
 
-	hide() {
+	close() {
 		this.anchor.setEnabled(false);
 	}
 }
 
 export enum MediatorEventType {
+	VALID_TOKEN,
 	SELECT_TILE,
 	SELECT_TOKEN,
 	PUT_TILE,
@@ -95,6 +96,11 @@ export enum MediatorEventType {
 	CONFIRM_TILE,
 	ROTATE_TILE_CW,
 	ROTATE_TILE_CCW,
+	CONFIRM_NO_PLACEMENT,
+	CANCEL_NO_PLACEMENT,
+	DUPLICATE_THREE,
+	DUPLICATE_ALL,
+	SUFFLE,
 }
 
 type SELECT_TILE_EVENT = {
@@ -114,7 +120,6 @@ type PUT_TILE_EVENT = {
 
 type PUT_TOKEN_EVENT = {
 	type: MediatorEventType.PUT_TOKEN;
-	data: string;
 };
 
 type CONFIRM_TILE_EVENT = {
@@ -133,6 +138,29 @@ type ROTATE_TILE_CW_EVENT = {
 	type: MediatorEventType.ROTATE_TILE_CW;
 };
 
+type CONFIRM_NO_PLACEMENT_EVENT = {
+	type: MediatorEventType.CONFIRM_NO_PLACEMENT;
+};
+type CANCEL_NO_PLACEMENT_EVENT = {
+	type: MediatorEventType.CANCEL_NO_PLACEMENT;
+};
+
+type DUPLICATE_THREE_EVENT = {
+	type: MediatorEventType.DUPLICATE_THREE;
+};
+type DUPLICATE_ALL_EVENT = {
+	type: MediatorEventType.DUPLICATE_ALL;
+	data: WildLife;
+};
+
+type SUFFLE_EVENT = {
+	type: MediatorEventType.SUFFLE;
+};
+
+type VALID_TOKEN_EVENT = {
+	type: MediatorEventType.VALID_TOKEN;
+};
+
 export type MediatorEvent =
 	| SELECT_TILE_EVENT
 	| SELECT_TOKEN_EVENT
@@ -141,4 +169,10 @@ export type MediatorEvent =
 	| CONFIRM_TILE_EVENT
 	| CANCEL_TILE_EVENT
 	| ROTATE_TILE_CCW_EVENT
-	| ROTATE_TILE_CW_EVENT;
+	| ROTATE_TILE_CW_EVENT
+	| CONFIRM_NO_PLACEMENT_EVENT
+	| CANCEL_NO_PLACEMENT_EVENT
+	| DUPLICATE_THREE_EVENT
+	| DUPLICATE_ALL_EVENT
+	| SUFFLE_EVENT
+	| VALID_TOKEN_EVENT;
