@@ -1,29 +1,21 @@
-import {
-	AbstractMesh,
-	ActionManager,
-	Color3,
-	ExecuteCodeAction,
-	PredicateCondition,
-	Scene,
-	StandardMaterial,
-	Tools,
-	TransformNode,
-	Vector3,
-} from '@babylonjs/core';
-import { Mediator } from '../mediator';
-import { BaseModal, MediatorEventType, WildLife } from '../interfaces';
-import { Select } from '../assets/select';
-import { Assets } from '../assets';
+import { AbstractMesh, Color3, Scene, StandardMaterial, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import { Assets } from './assets';
+import { GameInfo } from './gameInfo';
 
-export class InfoModal extends BaseModal {
+export class InfoUI {
 	private turnAnchor: TransformNode[];
 	private pineconeAnchor: TransformNode[];
 	private numbers: AbstractMesh[];
-	constructor(private scene: Scene, parent: TransformNode, private mediator: Mediator) {
-		super(parent);
+	private anchor: TransformNode;
+
+	constructor(private scene: Scene, private readonly gameInfo: GameInfo) {
+		this.anchor = new TransformNode('modal-anchor', this.scene);
+		const cam = this.scene.getCameraByName('board-cam')!;
+		this.anchor.parent = cam;
 
 		const whiteMat = new StandardMaterial('white');
-		whiteMat.diffuseColor = Color3.White();
+		whiteMat.emissiveColor = Color3.White();
+
 		this.numbers = new Array(10).fill(null).map((_, i) => {
 			const mesh = this.scene.getMeshById(`${i}`)!;
 			mesh.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
@@ -70,10 +62,9 @@ export class InfoModal extends BaseModal {
 		this.anchor.getChildMeshes().forEach((mesh) => mesh.setEnabled(true));
 		this.setPinecone(0);
 		this.setTurn(20);
-		this.open();
 	}
 
-	setTurn(value: number) {
+	private setTurn(value: number) {
 		this.turnAnchor.forEach((anchor) => anchor.getChildMeshes().forEach((mesh) => mesh.dispose()));
 		String(value)
 			.split('')
@@ -83,7 +74,7 @@ export class InfoModal extends BaseModal {
 			});
 	}
 
-	setPinecone(value: number) {
+	private setPinecone(value: number) {
 		this.pineconeAnchor.forEach((anchor) => anchor.getChildMeshes().forEach((mesh) => mesh.dispose()));
 		String(value)
 			.split('')
@@ -91,5 +82,10 @@ export class InfoModal extends BaseModal {
 				const mesh = this.numbers[Number(v)].clone(`pinecone${i}`, this.pineconeAnchor[i])!;
 				mesh.setEnabled(true);
 			});
+	}
+
+	reset() {
+		this.setTurn(this.gameInfo.turnlefts);
+		this.setPinecone(this.gameInfo.natureToken);
 	}
 }

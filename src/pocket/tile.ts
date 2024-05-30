@@ -1,19 +1,15 @@
 import {
-	AbstractMesh,
 	ActionManager,
 	Animation,
 	ExecuteCodeAction,
-	Observable,
 	PredicateCondition,
 	Scene,
 	Tools,
-	TransformNode,
 	Vector3,
 } from '@babylonjs/core';
-import { MediatorEventType, PocketTileInfo, TileInfo } from '../interfaces';
+import { Mediator, TileInfo } from '../interfaces';
 import { TileMesh } from '../assets/tile';
-import type { Mediator } from '../mediator';
-import { GameState } from '../gameInfo';
+import { GameInfo } from '../gameInfo';
 
 const slideDownY = [-3, -1, 1, 3];
 export class PocketTile {
@@ -22,7 +18,8 @@ export class PocketTile {
 		private scene: Scene,
 		private _tileMesh: TileMesh,
 		private _tileInfo: TileInfo,
-		private readonly mediator: Mediator
+		private readonly mediator: Mediator,
+		private readonly gameInfo: GameInfo
 	) {
 		this._tileMesh.position = new Vector3(0.5, 5, 0);
 		this._tileMesh.rotation = new Vector3(Tools.ToRadians(90), 0, 0);
@@ -31,14 +28,14 @@ export class PocketTile {
 		this._tileMesh.actionManager.hoverCursor = 'default';
 		const pickTileCondition = new PredicateCondition(
 			this._tileMesh.actionManager,
-			() => this.mediator.gameState == GameState.PICK_TILE
+			() => this.gameInfo.canPickTile
 		);
 
 		const pickDownAction = new ExecuteCodeAction(
 			ActionManager.OnPickDownTrigger,
 			(_evt) => {
 				this._tileMesh.actionManager.hoverCursor = 'default';
-				const type = MediatorEventType.SELECT_TILE;
+				const type = 'PICK_TILE';
 				const data = { ...this._tileInfo, index: this._index };
 				this.mediator.notifyObservers({ type, data });
 			},

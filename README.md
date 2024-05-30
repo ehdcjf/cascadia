@@ -112,3 +112,202 @@ Close
 The last tile and token has been placed and the scoring phase will now begin!
 
 Calculate Score
+
+# 상태
+
+## READY
+
+## START
+
+useRefill: boolean
+useNature: boolean
+canRefill: boolean
+canPickTile: boolean
+canPickToken: boolean
+canUndo: boolean
+canDrawTile: boolean
+natureToken: number
+turnLefts: number
+
+# 이벤트
+
+## _END_ (토큰을 입력한 경우 실행)
+
+0. 게임 상태를 **Ready** 로 변경한다.
+
+1. TurnLefts 를 1 감소시킨다.
+
+      1. TurnLefts 가 0이면 _Cacluate_ 이벤트를 실행하고 종료한다.
+
+2. useRefill을 false로 설정한다.
+   canRefill을 false 로 설정한다.
+
+3. GameInfo 모달의 정보를 갱신한다.
+4. _Tile proccess_, _Token Process_ 이벤트를 실행한다.
+
+## _Tile Process_
+
+1. 사용한 타일을 제거한다.
+2. 가장 멀리 있는 타일을 제거한다.
+3. 새로운 타일을 꺼낸다.
+
+## _Token Process_
+
+1. 사용한 토큰을 제거한다.
+2. 가장 멀리있는 토큰을 제거한다.
+3. 새로운 토큰을 꺼낸다.
+      1. 동일한 토큰이 4개 나오면 _Duplicate All_ 이벤트를 실행한다.
+      2. 동일한 토큰이 3개 나오면 _Can Refill_ 이벤트를 실행한다.
+      3. 위 경우가 아닐 경우 _Start_ 이벤트를 실행한다.
+
+## _Duplicate All_
+
+1. [Duplicate All] 모달을 띄운다.
+2. close 버튼을 누르면 0. 모달을 숨긴다.
+      1. 중복된 토큰을 임시보관한다.(UI에서는 slideLeft);
+      2. 토큰을 섞는다.
+      3. 토큰을 4개 꺼낸다.
+            1. 동일한 토큰이 4개 나오면 임시보관중이던 토큰 다시 주머니에 넣고 _Duplicate All_ 이벤트를 실행한다.
+            2. 동일한 토큰이 3개 나오면 canRefill을 true로 설정하고 _Start_ 이벤트를 실행한다.
+            3. 위 경우가 아닐 경우 _Start_ 이벤트를 실행한다.
+
+## _Start_
+
+1. Game의 상태를 **Start** 로 변경한다.
+2. default 모달을 띄운다.
+3. canPickTile 을 true 로 설정한다.
+
+## _Pick Tile_
+
+1. selectedTile을 타일 정보로 설정한다.
+2. canDrawTile 를 true 로 설정한다.
+3. 모든 타일의 edge를 지운다. 선택된 타일의 edge를 노란색으로 변경한다.
+
+## _Put Tile_
+
+3. Game의 상태를 **Tile Action** 으로 변경한다
+1. targetTileID를 릭된 타일의 TileID로 설정한다.1. tileAction 모달을 띄운다.
+
+## Pick Token
+
+1. selectedToken을 해당 토큰으로 설정한다.
+
+1-1. 해당 토큰이 배치 불가능하면 _Choice_ 이벤트를 실행한다.
+
+1-2. 해당 토큰이 배치 가능하면 canDrawToken을 true로 설정한다.
+
+## _Put Token_
+
+1. targetTileID를 wildlife 정보를 selectedToken의 wildlife 정보로 설정한다.
+2. _End_ 이벤트를 실행한다. throwToken:false;
+
+## _Undo Tile_
+
+0. targetTileID의 tile 정보를 초기화한다.
+1. targetTileID를 null로 설정한다.
+2. selectedTile을 null 로 설정한다.
+3. 모든 타일의 edge를 지운다.
+4. canPickTile 을 true 로 설정한다.
+5. Game의 상태를 **Start** 으로 변경한다.
+
+## _Cancle Tile_
+
+1. tileAction 모달을 지운다.
+2. _Undo Tile_ 이벤트를 실행한다.
+
+## _Confirm Tile_
+
+1. canUndo 를 true 로 설정한다.
+2. tileAction 모달을 지운다.
+3. canDrawTile을 false 로 설정한다.
+4. canPickTile 을 false 로 설정한다.
+
+useNature == false
+
+1. 해당 라인의 token을 선택한다.
+
+      1. 해당 Token이 배치불가능하다면
+      2. _Choice_ 이벤트를 실행한다.
+
+      3. 해당 토큰이 배치가능하다면
+      4. targetTileID의 tile 의 속성을 habitat으로 변경한다.
+      5. canDrawToken을 true로 설정한다.
+
+useNature == true
+
+1. selectToken 모달을 띄운다.
+
+## _Rotate CW Tile_
+
+1. targetTile 위치의 Tile을 시계방향으로 회전한다.
+2. 회전 정보를 입력한다.
+
+## _Rotate CCW Tile_
+
+1. targetTile 위치의 Tile을 반시계방향으로 회전한다.
+2. 회전 정보를 입력한다.
+
+## _No Placement_
+
+1. Game 상태를 **Choice** 로 변경한다.
+2. Choice 모달을 띄운다.
+
+      1. Cancle 을 클릭한 경우 _Cancle Tile_ 이벤트를 실행한다.
+      2. Confirm 이벤트를 실행한 경우 _Throw Token_ 이벤트를 실행한다.
+
+## _Throw Token_
+
+1. 선택된 token leftslide
+2. 선택된 tile을 rightslide
+3. targetTileId의 속성을 habitat으로 변경한다.
+4. _END_ 이벤트를 실행한다.(throwToken==true)
+
+# _Duplicate Three_
+
+1. canRefill 을 true 로 설정한다.
+
+2. _Start_ 이벤트를 실행한다.
+
+# Modal
+
+## default
+
+1. canRefill 이 true 이고. useRefill 이 false 라면 default 모달의 Refill 버튼의 visibility 를 1 로 설정한다.
+2. natureToken>0 이면 Use NatureToken 버튼의 visibility를 1로 설정한다.
+3. canUndo 가 true 이면 Undo 버튼의 visibility를 1로 설정한다.
+
+## tile action
+
+cancle _Cancel Tile_ 이벤트를 실행한다.
+confirm _Confirm Tile_ 이벤트를 실행한다.
+rotate cw _Rotate CW Tile_ 이벤트를 실행한다.
+rotate ccw _Rotate CCW Tile_ 이벤트를 실행한다.
+
+## duplicateAll
+
+close _Duplicate All_ 이벤트를 실행한다.
+
+## duplicateThree
+
+close 모달을 숨긴다.
+confirm _Duplicate Three_ 이벤트를 실행한다.
+
+## Choice
+
+cancel cancel 이벤트
+confirm
+
+## selectToken
+
+1. close: canPickToken true;
+
+=================================================================
+버튼을 전부 정리해야겠음
+
+주머니-토큰: 토큰 선택,
+주머니-타일: 타일 선택,
+보드-타일: 선택된 타일 입력, 선택된 토큰 입력
+
+되돌리기: 타일선택 취소, 타일 입력 취소, 토큰 선택 취소
+중복3: 중복3모달
+솔방울토큰 사용: 솔방울토큰 사용 모달

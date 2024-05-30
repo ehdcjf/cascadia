@@ -12,8 +12,7 @@ import { BaseModal, Mediator, WildLife } from '../interfaces';
 import { Select } from '../assets/select';
 import { Assets } from '../assets';
 import { GameInfo, GameState } from '../gameInfo';
-export class DuplicateAllModal extends BaseModal {
-	private wildlife: Record<WildLife, AbstractMesh> = {} as Record<WildLife, AbstractMesh>;
+export class ClearTokenModal extends BaseModal {
 	private _select: Select;
 	private resolve: any;
 	constructor(
@@ -24,24 +23,13 @@ export class DuplicateAllModal extends BaseModal {
 	) {
 		super(parent);
 
-		const main = this.scene.getMeshById('all-duplicate-token')!;
+		const main = this.scene.getMeshById('nature-clear')!;
 		main.parent = this.anchor;
 		main.position = new Vector3(0, 0, 10);
 		main.scalingDeterminant = 0.3;
 		main.renderingGroupId = 1;
 		main.setEnabled(true);
 		main.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
-
-		(['bear', 'elk', 'salmon', 'fox', 'hawk'] as WildLife[]).forEach((wildlife) => {
-			const mesh = this.scene.getMeshById('all-duplicate-token-' + wildlife)!;
-			mesh.parent = this.anchor;
-			mesh.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
-			mesh.position = new Vector3(0, 0, 10);
-			mesh.scalingDeterminant = 0.3;
-			mesh.renderingGroupId = 1;
-			mesh.setEnabled(true);
-			this.wildlife[wildlife] = mesh;
-		});
 
 		this._select = new Select([Assets.getClose(this.anchor)]);
 		const closeAction = new ExecuteCodeAction(
@@ -63,15 +51,9 @@ export class DuplicateAllModal extends BaseModal {
 	}
 
 	open() {
-		const wildlife = this.gameInfo.duplicate!;
-		for (const key in this.wildlife) {
-			if (key == wildlife) this.wildlife[key].setEnabled(true);
-			else this.wildlife[key as WildLife].setEnabled(false);
-		}
 		super.open();
 		return new Promise<void>((resolve) => {
 			this.resolve = resolve;
-			console.log('xxxx');
 		});
 	}
 }

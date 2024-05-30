@@ -1,4 +1,4 @@
-import { ActionManager, TransformNode } from '@babylonjs/core';
+import { Observable, TransformNode } from '@babylonjs/core';
 import { Assets } from './assets';
 
 export type WildLife = 'bear' | 'elk' | 'hawk' | 'salmon' | 'fox';
@@ -7,15 +7,15 @@ export type Habitat = 'desert' | 'forest' | 'lake' | 'mountain' | 'swamp';
 export type TileInfo = { tileNum: string; habitats: Habitat[]; wildlife: WildLife[]; rotation: number };
 export type PocketTileInfo = Omit<TileInfo, 'tileNum'> & { index: number };
 export type PocketTokenInfo = { wildlife: WildLife; index: number };
-// export type Tile = {
-// 	tileNum: number;
-// 	placedToken: null | WildLife;
-// 	habaitats: Array<Habitat>;
-// 	wildlife: Array<WildLife>;
-// 	habitatSides: Array<Habitat | null>;
-// 	neighborhood: Array<string>;
-// 	qrs: QRS;
-// };
+export type Tile = {
+	tileNum: number;
+	placedToken: null | WildLife;
+	habitats: Array<Habitat>;
+	wildlife: Array<WildLife>;
+	habitatSides: Array<Habitat | null>;
+	neighborhood: Array<string>;
+	qrs: QRS;
+};
 
 export type MapData = Map<string, Tile>;
 export type QRS = { q: number; r: number; s: number };
@@ -24,6 +24,13 @@ export type GroupResult = {
 	score: number;
 	groups: string[][];
 };
+
+export enum GAMESTATE {
+	DEFAULT = 1,
+	NATURE_CLEAR = 2,
+	NATURE_PICK = 4,
+	READY = 7,
+}
 
 export type TileKey =
 	| 'desert-lake'
@@ -86,93 +93,165 @@ export abstract class BaseModal {
 	}
 }
 
-export enum MediatorEventType {
-	VALID_TOKEN,
-	SELECT_TILE,
-	SELECT_TOKEN,
-	PUT_TILE,
-	PUT_TOKEN,
-	CANCEL_TILE,
-	CONFIRM_TILE,
-	ROTATE_TILE_CW,
-	ROTATE_TILE_CCW,
-	CONFIRM_NO_PLACEMENT,
-	CANCEL_NO_PLACEMENT,
-	DUPLICATE_THREE,
-	DUPLICATE_ALL,
-	SUFFLE,
-}
+type TURN_START_EVENT = {
+	type: 'TURN_START';
+};
 
-type SELECT_TILE_EVENT = {
-	type: MediatorEventType.SELECT_TILE;
+type TURN_END_EVENT = {
+	type: 'TURN_END';
+};
+
+type INIT_EVENT = {
+	type: 'INIT';
+};
+type READY_EVENT = {
+	type: 'READY';
+};
+
+type START_EVENT = {
+	type: 'START';
+};
+
+type END_EVENT = {
+	type: 'END';
+	data: {
+		addNatureToken: boolean;
+	};
+};
+
+type PICK_TILE_EVENT = {
+	type: 'PICK_TILE';
 	data: PocketTileInfo;
 };
 
-type SELECT_TOKEN_EVENT = {
-	type: MediatorEventType.SELECT_TOKEN;
+type PICK_TOKEN_EVENT = {
+	type: 'PICK_TOKEN';
 	data: PocketTokenInfo;
 };
 
 type PUT_TILE_EVENT = {
-	type: MediatorEventType.PUT_TILE;
+	type: 'PUT_TILE';
 	data: string;
 };
 
 type PUT_TOKEN_EVENT = {
-	type: MediatorEventType.PUT_TOKEN;
+	type: 'PUT_TOKEN';
+	data: {
+		addNatureToken: boolean;
+	};
 };
 
 type CONFIRM_TILE_EVENT = {
-	type: MediatorEventType.CONFIRM_TILE;
+	type: 'CONFIRM_TILE';
 };
 
 type CANCEL_TILE_EVENT = {
-	type: MediatorEventType.CANCEL_TILE;
+	type: 'CANCEL_TILE';
 };
 
 type ROTATE_TILE_CCW_EVENT = {
-	type: MediatorEventType.ROTATE_TILE_CCW;
+	type: 'ROTATE_TILE_CCW';
 };
 
 type ROTATE_TILE_CW_EVENT = {
-	type: MediatorEventType.ROTATE_TILE_CW;
+	type: 'ROTATE_TILE_CW';
 };
 
-type CONFIRM_NO_PLACEMENT_EVENT = {
-	type: MediatorEventType.CONFIRM_NO_PLACEMENT;
+type NO_PLACEMENT_EVENT = {
+	type: 'NO_PLACEMENT';
 };
-type CANCEL_NO_PLACEMENT_EVENT = {
-	type: MediatorEventType.CANCEL_NO_PLACEMENT;
+type THROW_TOKEN_EVENT = {
+	type: 'THROW_TOKEN';
 };
 
 type DUPLICATE_THREE_EVENT = {
-	type: MediatorEventType.DUPLICATE_THREE;
-};
-type DUPLICATE_ALL_EVENT = {
-	type: MediatorEventType.DUPLICATE_ALL;
+	type: 'DUPLICATE_THREE';
 	data: WildLife;
 };
 
-type SUFFLE_EVENT = {
-	type: MediatorEventType.SUFFLE;
+type CAN_REFILL_EVENT = {
+	type: 'CAN_REFILL';
+	data: WildLife;
 };
 
-type VALID_TOKEN_EVENT = {
-	type: MediatorEventType.VALID_TOKEN;
+type REPLACE_EVENT = {
+	type: 'REPLACE';
 };
+
+type DUPLICATE_ALL_EVENT = {
+	type: 'DUPLICATE_ALL';
+	data: WildLife;
+};
+
+type UNDO_EVENT = {
+	type: 'UNDO';
+};
+
+type CALCULATE_EVENT = {
+	type: 'CALCULATE';
+};
+
+type USE_NATURE_EVENT = {
+	type: 'USE_NATURE';
+};
+
+type REFILL_EVENT = {
+	type: 'REFILL';
+};
+
+type MODAL_OPEN_EVENT = {
+	type: 'MODAL_OPEN';
+};
+
+type MODAL_CLOSE_EVENT = {
+	type: 'MODAL_CLOSE';
+};
+
+type TILE_ACTION_EVENT = {
+	type: 'TILE_ACTION';
+	data: string;
+};
+
+export const MODAL_TAG = {
+	DUPLICATE_THREE: 'DUPLICATE_THREE',
+	DUPLICATE_ALL: 'DUPLICATE_ALL',
+	NO_PLACEMENT: 'NO_PLACEMENT',
+	NO_PLACEMENT_NATURE: 'NO_PLACEMENT_NATURE',
+	PICK_TOKEN: 'PICK_TOKEN',
+	PICK_TILE: 'PICK_TILE',
+	CLEAR_TOKEN: 'CLEAR_TOKEN',
+	USE_NATURE: 'USE_NATURE',
+};
+
+export type MODAL_TAG = keyof typeof MODAL_TAG;
 
 export type MediatorEvent =
-	| SELECT_TILE_EVENT
-	| SELECT_TOKEN_EVENT
+	| INIT_EVENT
+	| READY_EVENT
+	| START_EVENT
+	| END_EVENT
+	| PICK_TILE_EVENT
 	| PUT_TILE_EVENT
 	| PUT_TOKEN_EVENT
+	| PICK_TOKEN_EVENT
 	| CONFIRM_TILE_EVENT
 	| CANCEL_TILE_EVENT
 	| ROTATE_TILE_CCW_EVENT
 	| ROTATE_TILE_CW_EVENT
-	| CONFIRM_NO_PLACEMENT_EVENT
-	| CANCEL_NO_PLACEMENT_EVENT
+	| NO_PLACEMENT_EVENT
+	| THROW_TOKEN_EVENT
 	| DUPLICATE_THREE_EVENT
 	| DUPLICATE_ALL_EVENT
-	| SUFFLE_EVENT
-	| VALID_TOKEN_EVENT;
+	| UNDO_EVENT
+	| USE_NATURE_EVENT
+	| REPLACE_EVENT
+	| REFILL_EVENT
+	| MODAL_OPEN_EVENT
+	| MODAL_CLOSE_EVENT
+	| CALCULATE_EVENT
+	| CAN_REFILL_EVENT
+	| TURN_END_EVENT
+	| TURN_START_EVENT
+	| TILE_ACTION_EVENT;
+
+export type Mediator = Observable<MediatorEvent>;

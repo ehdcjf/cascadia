@@ -9,6 +9,7 @@ import {
 	ExecuteCodeAction,
 	HemisphericLight,
 	Observable,
+	PBRMaterial,
 	PointerEventTypes,
 	Scene,
 	SceneLoader,
@@ -17,7 +18,7 @@ import {
 	Viewport,
 } from '@babylonjs/core';
 import { Assets } from './assets';
-import { Mediator } from './mediator';
+import { GameManager } from './mediator';
 
 class App {
 	private engine!: Engine;
@@ -33,10 +34,10 @@ class App {
 		this.engine = (await EngineFactory.CreateAsync(canvas, undefined)) as Engine;
 
 		await this.createScene();
-
-		const mediator = new Mediator(this.scene);
+		// const ui = new Gui(this.scene);
+		// const mediator = new GameManager(this.scene);
 		Inspector.Show(this.scene, {});
-
+		this.test();
 		this.engine.runRenderLoop(() => {
 			if (this.scene) this.scene.render();
 		});
@@ -49,9 +50,8 @@ class App {
 		this.engine.displayLoadingUI();
 		this.scene = new Scene(this.engine);
 		this.setupCamera();
-		this.setupLight();
 
-		await Assets.setup(this.scene);
+		// await Assets.setup(this.scene);
 		await this.scene.whenReadyAsync();
 		this.engine.hideLoadingUI();
 	}
@@ -95,6 +95,7 @@ class App {
 		// Viewport 두개로 나눠서
 		// Pointer 움직일때마다
 		// cameraToUseForPointers 변경해줘야함.
+
 		this.scene.onPointerObservable.add((evt) => {
 			if (evt.type == PointerEventTypes.POINTERMOVE) {
 				if (this.scene.pointerX < window.innerWidth * 0.2) {
@@ -143,10 +144,15 @@ class App {
 		});
 	}
 
-	private setupLight() {
-		const light = new HemisphericLight('light', new Vector3(0, 1, 0), this.scene);
-		light.intensity = 0.3;
-		const light2 = new HemisphericLight('light2', new Vector3(0, 1, 0));
+	private async test() {
+		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia4.glb', this.scene);
+		(this.scene.getMaterialById('score1') as PBRMaterial).unlit = true;
+		assets.meshes.forEach((mesh) => {
+			mesh.visibility = 0;
+		});
+		// const bear = this.scene.getMeshById('salmon-on');
+		// bear?.setEnabled(false);
+		// console.log(bear?.material.unlit);
 	}
 }
 

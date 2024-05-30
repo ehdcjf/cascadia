@@ -139,7 +139,7 @@ export class Board {
 		const tile: Tile = {
 			tileNum: this.mapData.size + 1,
 			placedToken: null,
-			habaitats: tileInfo.habitats,
+			habitats: tileInfo.habitats,
 			wildlife: tileInfo.wildlife,
 			habitatSides: this.getHabitatSides(tileInfo.habitats, rotation),
 			neighborhood: this.getNeighborTileNames(tileName),

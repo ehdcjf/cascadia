@@ -1,16 +1,8 @@
-import {
-	AbstractMesh,
-	ActionManager,
-	ExecuteCodeAction,
-	PredicateCondition,
-	TransformNode,
-	Vector3,
-} from '@babylonjs/core';
+import { AbstractMesh, ActionManager, ExecuteCodeAction, PredicateCondition, Vector3 } from '@babylonjs/core';
 import { TileMesh } from '../assets/tile';
-import { Mediator } from '../mediator';
-import { MediatorEventType, TileInfo, TokenKey, WildLife } from '../interfaces';
+import { Mediator, TileInfo, TokenKey, WildLife } from '../interfaces';
 import { Assets } from '../assets';
-import { TokenMesh } from '../assets/token';
+import { GameInfo } from '../gameInfo';
 
 type BoardTileInfo = Omit<TileInfo, 'tileNum'>;
 
@@ -25,9 +17,11 @@ export class BoardTile {
 		private _tileMesh: TileMesh,
 		private _id: string,
 		position: Vector3,
-		private readonly mediator: Mediator
+		private readonly mediator: Mediator,
+		private readonly gameInfo: GameInfo
 	) {
 		this._tileMesh.position = position;
+		this._tileMesh.setTileID(_id);
 
 		this._tileMesh.renderEdges();
 		this._tileMesh.actionManager.hoverCursor = 'default';
@@ -39,22 +33,34 @@ export class BoardTile {
 
 		const putTokenCondition = new PredicateCondition(
 			this._tileMesh.actionManager,
-			() => this.mediator.canPutToken(this._tileInfo?.wildlife) && this.state == 'habitat'
+			() => {
+				return (
+					this.gameInfo.canDrawToken &&
+					this.state == 'habitat' &&
+					this._tileInfo?.wildlife &&
+					this.gameInfo.pocketToken != null &&
+					this._tileInfo.wildlife.includes(this.gameInfo.pocketToken?.wildlife)
+				);
+			}
+
+			// () => false
 		);
 
 		const confirmTokenAction = new ExecuteCodeAction(
 			ActionManager.OnPickDownTrigger,
 			(_evt) => {
 				this._tileMesh.actionManager.hoverCursor = 'default';
+				const addNatureToken = this._tileInfo.wildlife.length == 1;
 				this._tileInfo.wildlife = [];
-				this._placedToken = this.mediator.wildlife!;
-				this._token.material = Assets.getTokenMat(
-					(this.mediator.wildlife! + '-active') as TokenKey
-				);
+				this._placedToken = this.gameInfo.pocketToken!.wildlife!;
+				this._token.material = Assets.getTokenMat((this._placedToken + '-active') as TokenKey);
 				this._tileMesh.actionManager.processTrigger(CONFIRM_TILE_ACTION);
 				this._tileMesh.material = this._tileInfo;
-
-				this.mediator.notifyObservers({ type: MediatorEventType.PUT_TOKEN });
+				this.setToken();
+				this.mediator.notifyObservers({
+					type: 'PUT_TOKEN',
+					data: { addNatureToken },
+				});
 			},
 			putTokenCondition
 		);
@@ -66,7 +72,7 @@ export class BoardTile {
 			(_evt) => {
 				this._tileMesh.actionManager.hoverCursor = 'pointer';
 
-				this._token.material = Assets.getTokenMat(this.mediator.wildlife!);
+				this._token.material = Assets.getTokenMat(this.gameInfo.pocketToken!.wildlife!);
 				this._token.setEnabled(true);
 			},
 			putTokenCondition
@@ -86,14 +92,14 @@ export class BoardTile {
 
 		const drawTileCondition = new PredicateCondition(
 			this._tileMesh.actionManager,
-			() => this.state == 'tile' && this.mediator.canPaintTile()
+			() => this.gameInfo.canDrawTile && this.state == 'tile'
 		);
 
 		const pickDownAction = new ExecuteCodeAction(
 			ActionManager.OnPickDownTrigger,
 			(_evt) => {
 				this._tileMesh.actionManager.hoverCursor = 'default';
-				const type = MediatorEventType.PUT_TILE;
+				const type = 'PUT_TILE';
 				const data = this._id;
 				this.mediator.notifyObservers({ type, data });
 			},
@@ -106,7 +112,7 @@ export class BoardTile {
 			ActionManager.OnPointerOverTrigger,
 			(_evt) => {
 				this._tileMesh.actionManager.hoverCursor = 'pointer';
-				this.paint(this.mediator.pocketTile!);
+				this.paint(this.gameInfo.pocketTile!);
 			},
 			drawTileCondition
 		);
@@ -172,5 +178,13 @@ export class BoardTile {
 
 	setToken() {
 		this._tileMesh.actionManager.processTrigger(CONFIRM_TILE_ACTION);
+	}
+
+	getMapData() {
+		return {
+			state: this.state,
+			placedToken: this._placedToken,
+			...this._tileInfo,
+		};
 	}
 }

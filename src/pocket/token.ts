@@ -1,16 +1,67 @@
-import { ActionManager, ExecuteCodeAction, Animation, Observable, Scene, Vector3, Tools } from '@babylonjs/core';
+import {
+	ActionManager,
+	ExecuteCodeAction,
+	Animation,
+	Observable,
+	Scene,
+	Vector3,
+	Tools,
+	PredicateCondition,
+} from '@babylonjs/core';
 import { TokenMesh } from '../assets/token';
-import { Mediator } from '../mediator';
+import { GameManager } from '../mediator';
+import { Mediator } from '../interfaces';
+import { GameInfo, GameState } from '../gameInfo';
 const slideDownY = [-3, -1, 1, 3];
 const materialState = ['none', 'active', 'inactive'] as ('none' | 'active' | 'inactive')[];
 export class PocketToken {
 	private _index: number = 4;
 	private state: number = 0;
-	constructor(private scene: Scene, private _tokenMesh: TokenMesh, mediator: Mediator) {
+	constructor(
+		private scene: Scene,
+		private _tokenMesh: TokenMesh,
+		private readonly mediator: Mediator,
+		private readonly gameInfo: GameInfo
+	) {
 		this._tokenMesh.position = new Vector3(-1, 5, 0);
 		this._tokenMesh.scalingDeterminant = 0.6;
 		this._tokenMesh.rotation = new Vector3(Tools.ToRadians(90), 0, 0);
 		this._tokenMesh.actionManager.hoverCursor = 'default';
+
+		const pickTileCondition = new PredicateCondition(
+			this._tokenMesh.actionManager,
+			() => this.gameInfo.canPickToken
+		);
+
+		const pickDownAction = new ExecuteCodeAction(
+			ActionManager.OnPickDownTrigger,
+			(_evt) => {
+				this._tokenMesh.actionManager.hoverCursor = 'default';
+				const type = 'PICK_TOKEN';
+				const data = { wildlife: this.wildlife!, index: this._index };
+				this.mediator.notifyObservers({ type, data });
+			},
+			pickTileCondition
+		);
+		this._tokenMesh.actionManager.registerAction(pickDownAction);
+
+		const pointerOverAction = new ExecuteCodeAction(
+			ActionManager.OnPointerOverTrigger,
+			(_evt) => {
+				this._tokenMesh.actionManager.hoverCursor = 'pointer';
+			},
+			pickTileCondition
+		);
+		this._tokenMesh.actionManager.registerAction(pointerOverAction);
+
+		const pointerOutAction = new ExecuteCodeAction(
+			ActionManager.OnPointerOutTrigger,
+			(_evt) => {
+				this._tokenMesh.actionManager.hoverCursor = 'default';
+			},
+			pickTileCondition
+		);
+		this._tokenMesh.actionManager.registerAction(pointerOutAction);
 	}
 
 	get index() {

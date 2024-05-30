@@ -1,4 +1,4 @@
-import { AbstractMesh, ActionManager, Tools, TransformNode, Vector3 } from '@babylonjs/core';
+import { AbstractMesh, ActionManager, PBRMaterial, Tools, TransformNode, Vector3 } from '@babylonjs/core';
 import { Assets } from './index';
 
 const positionX = [[], [0], [-1.5, 1.5], [-2.5, 0, 2.5]];
@@ -13,6 +13,7 @@ export class Select {
 			button.setEnabled(true);
 			button.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
 			button.material!.disableDepthWrite = true;
+			(button.material! as PBRMaterial).unlit = true;
 			button.actionManager = Assets.getActionManger();
 		});
 	}

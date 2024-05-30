@@ -25,7 +25,7 @@ export class TileMesh {
 		this._anchor.parent = this._tile;
 
 		this._edge = Assets.getTilEdge(this._anchor);
-		this._edge.material = Assets.getEdgeMat('none');
+		this._edge.material = Assets.getMat('none');
 		this._edge.setEnabled(true);
 		this._edge.isPickable = false;
 
@@ -87,7 +87,7 @@ export class TileMesh {
 	}
 
 	set edge(color: 'yellow' | 'none') {
-		this._edge.material = Assets.getEdgeMat(color);
+		this._edge.material = Assets.getMat(color);
 	}
 
 	set rotateY(number: number) {
@@ -104,6 +104,11 @@ export class TileMesh {
 
 	public dispose() {
 		this._tile.dispose();
+	}
+
+	setTileID(value: string) {
+		this._tile.id = value;
+		this._tile.name = value;
 	}
 
 	public renderEdges() {

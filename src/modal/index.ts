@@ -1,47 +1,75 @@
 import { Scene, TransformNode } from '@babylonjs/core';
-import { Mediator } from '../mediator';
-import { BaseModal, WildLife } from '../interfaces';
-import { TileActionModal } from './action';
-import { NoPlacementModal } from './impossible';
-import { DuplicateAllModal } from './deplicateAll';
+
+import { BaseModal, MODAL_TAG, Mediator } from '../interfaces';
+import { NoPlacementModal } from './noPlacement';
+
+import { GameInfo } from '../gameInfo';
 import { DuplicateThreeModal } from './deplicateThree';
-import { DefaultModal } from './default';
-import { InfoModal } from './info';
-
-export const MODAL_TAG = {
-	DEFAULT: 'DEFAULT',
-	ACTION: 'ACTION',
-	DUPLICATE_THREE: 'DUPLICATE_THREE',
-	DUPLICATE_ALL: 'DUPLICATE_ALL',
-	NO_PLACEMENT: 'NO_PLACEMENT',
-};
-
-type MODAL_TAG = keyof typeof MODAL_TAG;
+import { DuplicateAllModal } from './deplicateAll';
+import { PickTokenModal } from './pickToken';
+import { PickTileModal } from './pickTile';
+import { UseNatureTokenModal } from './useNatureToken';
+import { NatureNoPlacementModal } from './noPlacementNature';
+import { ClearTokenModal } from './clearToken';
 
 export class Modal {
 	private _anchor: TransformNode;
 	private modals: Record<MODAL_TAG, BaseModal> = {} as Record<MODAL_TAG, BaseModal>;
-	constructor(private scene: Scene, private mediator: Mediator) {
-		this._anchor = new TransformNode('modal-anchor', this.scene);
-		this._anchor.parent = this.scene.getCameraByName('board-cam');
 
-		new InfoModal(this.scene, this._anchor, this.mediator);
-		this.modals['DEFAULT'] = new DefaultModal(this.scene, this._anchor, this.mediator);
-		this.modals['ACTION'] = new TileActionModal(this.scene, this._anchor, this.mediator);
-		this.modals['NO_PLACEMENT'] = new NoPlacementModal(this.scene, this._anchor, this.mediator);
-		this.modals['DUPLICATE_ALL'] = new DuplicateAllModal(this.scene, this._anchor, this.mediator);
-		this.modals['DUPLICATE_THREE'] = new DuplicateThreeModal(this.scene, this._anchor, this.mediator);
+	constructor(private scene: Scene, private mediator: Mediator, private gameInfo: GameInfo) {
+		this._anchor = new TransformNode('modal-anchor', this.scene);
+		const cam = this.scene.getCameraByName('board-cam')!;
+		this._anchor.parent = cam;
+		this.modals['NO_PLACEMENT_NATURE'] = new NatureNoPlacementModal(
+			this.scene,
+			this._anchor,
+			this.mediator,
+			this.gameInfo
+		);
+
+		this.modals['CLEAR_TOKEN'] = new ClearTokenModal(
+			this.scene,
+			this._anchor,
+			this.mediator,
+			this.gameInfo
+		);
+
+		this.modals['NO_PLACEMENT'] = new NoPlacementModal(
+			this.scene,
+			this._anchor,
+			this.mediator,
+			this.gameInfo
+		);
+
+		this.modals['DUPLICATE_ALL'] = new DuplicateAllModal(
+			this.scene,
+			this._anchor,
+			this.mediator,
+			this.gameInfo
+		);
+		this.modals['DUPLICATE_THREE'] = new DuplicateThreeModal(
+			this.scene,
+			this._anchor,
+			this.mediator,
+			this.gameInfo
+		);
+		this.modals['PICK_TOKEN'] = new PickTokenModal(this.scene, this._anchor, this.mediator, this.gameInfo);
+
+		this.modals['PICK_TILE'] = new PickTileModal(this.scene, this._anchor, this.mediator, this.gameInfo);
+
+		this.modals['USE_NATURE'] = new UseNatureTokenModal(
+			this.scene,
+			this._anchor,
+			this.mediator,
+			this.gameInfo
+		);
 	}
 
-	open(tag: MODAL_TAG) {
-		this.modals[tag].open();
+	async open(tag: MODAL_TAG): Promise<any> {
+		return this.modals[tag].open();
 	}
 
 	close(tag: MODAL_TAG) {
-		this.modals[tag].close();
-	}
-
-	closeAll() {
-		Object.values(this.modals).forEach((modal) => modal.close());
+		return this.modals[tag].close();
 	}
 }

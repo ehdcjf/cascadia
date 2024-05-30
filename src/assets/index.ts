@@ -3,14 +3,30 @@ import {
 	ActionManager,
 	Color3,
 	Material,
+	PBRMaterial,
 	Scene,
 	SceneLoader,
 	StandardMaterial,
+	Texture,
 	TransformNode,
 } from '@babylonjs/core';
 import { TileMesh } from './tile';
 import { TileKey as TileMatKey, TokenKey as TokenMatKey, WildLife } from '../interfaces';
-type EdgeMatKey = 'red' | 'yellow' | 'none';
+type MaterialKey = 'red' | 'yellow' | 'none' | 'white';
+
+// type TextMeshKey =
+// 	| 'bear-text'
+// 	| 'elk-text'
+// 	| 'fox-text'
+// 	| 'hawk-text'
+// 	| 'salmon-text'
+// 	| 'cancel-text'
+// 	| 'clear-text'
+// 	| 'confirm-text'
+// 	| 'token,-text'
+// 	| 'tokens,-text'
+// 	| 'tokens-text';
+
 import { TokenMesh } from './token';
 
 export class Assets {
@@ -22,10 +38,10 @@ export class Assets {
 	private originConfirm: AbstractMesh;
 	private originClose: AbstractMesh;
 
-	public readonly tileMat: Record<TileMatKey, Material> = {} as Record<TileMatKey, Material>;
-	public readonly tokenMat: Record<TokenMatKey, Material> = {} as Record<TokenMatKey, Material>;
-	public readonly edgeMat: Record<EdgeMatKey, Material> = {} as Record<EdgeMatKey, Material>;
-
+	public readonly tileMat: Record<TileMatKey, PBRMaterial> = {} as Record<TileMatKey, PBRMaterial>;
+	public readonly tokenMat: Record<TokenMatKey, PBRMaterial> = {} as Record<TokenMatKey, PBRMaterial>;
+	public readonly mat: Record<MaterialKey, Material> = {} as Record<MaterialKey, Material>;
+	// public readonly textMesh: Record<TextMeshKey, AbstractMesh> = {} as Record<TextMeshKey, AbstractMesh>;
 	private constructor(private scene: Scene) {
 		this.originTile = this.scene.getMeshById('tile')!;
 		this.originTileEdge = this.scene.getMeshById('tile-edge')!;
@@ -53,7 +69,8 @@ export class Assets {
 				'swamp',
 			] as TileMatKey[]
 		).forEach((name) => {
-			this.tileMat[name] = scene.getMaterialByName(name)!;
+			this.tileMat[name] = scene.getMaterialByName(name)! as PBRMaterial;
+			this.tileMat[name].unlit = true;
 		});
 
 		(
@@ -76,28 +93,83 @@ export class Assets {
 				'salmon-inactive',
 			] as TokenMatKey[]
 		).forEach((name) => {
-			this.tokenMat[name] = scene.getMaterialByName(name)!;
+			this.tokenMat[name] = scene.getMaterialByName(name)! as PBRMaterial;
+			this.tokenMat[name].unlit = true;
 		});
 
-		const redMat = new StandardMaterial('red-edge');
-		redMat.diffuseColor = Color3.Red();
+		// (
+		// 	[
+		// 		'bear',
+		// 		'elk',
+		// 		'fox',
+		// 		'hawk',
+		// 		'salmon',
+		// 		'cancel',
+		// 		'clear',
+		// 		'confirm',
+		// 		'token,',
+		// 		'tokens,',
+		// 		'tokens',
+		// 	] as TextMeshKey[]
+		// ).forEach((name) => {
+		// 	this.textMesh[name] = scene.getMeshById(name + '-text')!;
+		// });
+		const redMat = new StandardMaterial('red');
+		redMat.emissiveColor = Color3.Red();
 
-		const yellowMat = new StandardMaterial('yellow-edge');
-		yellowMat.diffuseColor = Color3.Yellow();
+		const redMat2 = new StandardMaterial('red2');
+		redMat2.emissiveColor = Color3.FromHexString('ED1B24');
 
-		const noneMat = new StandardMaterial('none-edge');
+		const yellowMat = new StandardMaterial('yellow');
+		yellowMat.emissiveColor = Color3.Yellow();
+
+		const noneMat = new StandardMaterial('none');
 		noneMat.alpha = 0;
 
-		this.edgeMat = {
+		const whiteMat = new StandardMaterial('white');
+		whiteMat.emissiveColor = Color3.White();
+
+		// const greenMat = new StandardMaterial('green');
+		// greenMat.diffuseColor = Color3.Green();
+
+		// const greenMat2 = new StandardMaterial('green2');
+		// greenMat2.diffuseColor = Color3.FromHexString('3AFC21');
+
+		// const burgundyMat = new StandardMaterial('burgundy');
+		// burgundyMat.diffuseColor = Color3.FromHexString('890018');
+
+		// const elkMat = new StandardMaterial('elk');
+		// elkMat.diffuseColor = Color3.FromHexString('B48340');
+
+		// const foxMat = new StandardMaterial('fox');
+		// foxMat.diffuseColor = Color3.FromHexString('F3960B');
+
+		// const hawkMat = new StandardMaterial('hawk');
+		// hawkMat.diffuseColor = Color3.FromHexString('71B5DA');
+
+		// const salmonMat = new StandardMaterial('salmon');
+		// salmonMat.diffuseColor = Color3.FromHexString('ED463E');
+
+		this.mat = {
 			red: redMat,
 			yellow: yellowMat,
 			none: noneMat,
+			white: whiteMat,
+			// red2: redMat2,
+			// green: greenMat,
+			// green2: greenMat2,
+			// burgundyMat: burgundyMat,
+			// bear: bearMat,
+			// elk: elkMat,
+			// fox: foxMat,
+			// hawk: hawkMat,
+			// salmon: salmonMat,
 		};
 	}
 
 	public static async setup(scene: Scene) {
 		if (!Assets.instance) {
-			const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia-final.glb', scene);
+			const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia4.glb', scene);
 			assets.meshes.forEach((mesh) => {
 				mesh.setEnabled(false);
 				console.log(mesh.id);
@@ -152,7 +224,7 @@ export class Assets {
 		return Assets.instance.tileMat[key];
 	}
 
-	public static getEdgeMat(key: EdgeMatKey) {
-		return Assets.instance.edgeMat[key];
+	public static getMat(key: MaterialKey) {
+		return Assets.instance.mat[key];
 	}
 }

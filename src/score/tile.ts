@@ -35,36 +35,56 @@ export class TileScoring {
 		// 각 서식지에 대한 그래프를 만들 준비를 한다.
 		for (const [tileID, tile] of mapData) {
 			const { tileNum } = tile;
+
 			this.tileNumtoID[tileNum] = tileID;
 			const neighborhood = tile.neighborhood;
 
 			for (let dir = 0; dir < neighborhood.length; dir++) {
 				const myHabitat = tile.habitatSides[dir]!;
+				if (myHabitat == null) continue;
 				this.habitatsMaches[myHabitat].placedTiles.add(tileID);
+
 				const neighborKey = neighborhood[dir];
 
 				if (!mapData.has(neighborKey)) continue;
+
 				const neighborTile = mapData.get(neighborKey)!;
+
 				const neighborTileNum = neighborTile.tileNum;
 				const matchedDir = (dir + 3) % 6;
 				const neighborHabitat = neighborTile.habitatSides[matchedDir];
 				if (myHabitat === neighborHabitat) {
-					const [tile1, tile2] =
-						tileNum < neighborTileNum
-							? [tileNum, neighborTileNum]
-							: [neighborTileNum, tileNum];
-
-					if (!this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.has(tile1)) {
+					if (!this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.has(tileNum)) {
 						this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.set(
-							tile1,
+							tileNum,
+							new Set()
+						);
+					}
+					if (
+						!this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.has(
+							neighborTileNum
+						)
+					) {
+						this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.set(
+							neighborTileNum,
 							new Set()
 						);
 					}
 
-					const links =
-						this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.get(tile1)!;
-					links.add(tile2);
-					this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.set(tile1, links);
+					const links1 =
+						this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.get(tileNum)!;
+					links1.add(neighborTileNum);
+					this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.set(tileNum, links1);
+
+					const links2 =
+						this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.get(
+							neighborTileNum
+						)!;
+					links2.add(tileNum);
+					this.habitatsMaches[myHabitat].tilesWithMatchedHabitats.set(
+						neighborTileNum,
+						links2
+					);
 					tile.habitatSides[dir] = null;
 				}
 			}
@@ -90,17 +110,23 @@ export class TileScoring {
 					if (matchedHabitats.has(now)) {
 						const links = matchedHabitats.get(now)!;
 						for (const nextTile of links) {
-							visitedHabitats.add(nextTile);
+							if (!visitedHabitats.has(nextTile)) {
+								visitedHabitats.add(nextTile);
+								q.push(nextTile);
+							}
 						}
 					}
 					matchedHabitats.delete(tileNum);
 				}
+
 				if (habaitat.largestSet.length < visitedHabitats.size) {
 					habaitat.largestSet = [...visitedHabitats].map((v) => this.tileNumtoID[v]);
 				}
 			}
 		}
+	}
 
-		console.log(this.habitatsMaches);
+	getScore() {
+		return this.habitatsMaches;
 	}
 }
