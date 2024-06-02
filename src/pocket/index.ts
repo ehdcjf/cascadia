@@ -5,7 +5,6 @@ import { PocketTile } from './tile';
 import { PocketToken } from './token';
 import { TileMesh } from '../assets/tile';
 import { TokenMesh } from '../assets/token';
-import type { GameManager } from '../mediator';
 import { sleep } from '../utils';
 import { GameInfo } from '../gameInfo';
 

@@ -1,12 +1,8 @@
 import {
 	AbstractMesh,
 	ActionManager,
-	Color3,
 	ExecuteCodeAction,
-	Observable,
 	PredicateCondition,
-	StandardMaterial,
-	StateCondition,
 	Tools,
 	TransformNode,
 	Vector3,
@@ -14,7 +10,6 @@ import {
 import { Scene } from './scene';
 import { startingTiles } from '../../src2/data';
 import { Habitat, Tile, TileInfo, TileKey, TokenKey, WildLife } from '../interfaces';
-import { TileScoring } from '../score/tile';
 import { Assets } from '../assets';
 import { SceneState } from './metadata';
 import { ActionObserver, ModalEvents } from './observer';

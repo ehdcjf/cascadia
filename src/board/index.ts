@@ -1,9 +1,7 @@
-import { AbstractMesh, Mesh, Observable, PBRMaterial, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
-import { Assets } from '../assets/index';
+import { PBRMaterial, Scene, Tools, TransformNode, Vector3 } from '@babylonjs/core';
 import { BoardTile } from './tile';
-import { GameManager } from '../mediator';
 import { startingTiles } from '../data';
-import { Habitat, Mediator, Tile, TileInfo, WildLife } from '../interfaces';
+import { Habitat, Mediator, Tile, WildLife } from '../interfaces';
 import { TileMesh } from '../assets/tile';
 import { GameInfo } from '../gameInfo';
 import { TileAction } from './actions';
@@ -65,7 +63,6 @@ export class Board {
 				const { q, r, s } = this.qrsFromTileID(tileID);
 				const position = this.tileVectorFromQRS(q, r);
 				const tile = this.createTile(tileID, position);
-
 				this.tiles.set(tileID, tile);
 			});
 	}

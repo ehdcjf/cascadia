@@ -10,27 +10,13 @@ import {
 	EngineFactory,
 	ExecuteCodeAction,
 	HemisphericLight,
-	Observable,
-	PBRMaterial,
-	PointLight,
 	PointerEventTypes,
 	Scene,
 	SceneLoader,
-	SpotLight,
 	Tools,
-	TransformNode,
 	Vector3,
 	Viewport,
 } from '@babylonjs/core';
-import {
-	AdvancedDynamicTexture,
-	AdvancedDynamicTextureInstrumentation,
-	Button,
-	Control,
-	Rectangle,
-	StackPanel,
-	TextBlock,
-} from '@babylonjs/gui';
 
 class App {
 	private engine!: Engine;

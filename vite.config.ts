@@ -1,7 +1,7 @@
-import { defineConfig } from "vite";
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // easier readability in the sandbox
-  clearScreen: false,
-  publicDir: "public",
+	// easier readability in the sandbox
+	clearScreen: false,
+	publicDir: 'public',
 });

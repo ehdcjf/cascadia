@@ -35,7 +35,6 @@ export class TileScoring {
 		// 각 서식지에 대한 그래프를 만들 준비를 한다.
 		for (const [tileID, tile] of mapData) {
 			const { tileNum } = tile;
-
 			this.tileNumtoID[tileNum] = tileID;
 			const neighborhood = tile.neighborhood;
 
@@ -118,7 +117,6 @@ export class TileScoring {
 					}
 					matchedHabitats.delete(tileNum);
 				}
-
 				if (habaitat.largestSet.length < visitedHabitats.size) {
 					habaitat.largestSet = [...visitedHabitats].map((v) => this.tileNumtoID[v]);
 				}
