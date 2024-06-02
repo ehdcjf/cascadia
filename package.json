@@ -1,0 +1,22 @@
+{
+  "name": "cascadia",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "serve": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@babylonjs/core": "^7.3.2",
+    "@babylonjs/gui": "^7.3.2",
+    "@babylonjs/inspector": "^7.3.2",
+    "@babylonjs/loaders": "^7.4.0",
+    "babylonjs-serializers": "^7.3.2",
+    "vite": "^5.2.10"
+  }
+}
