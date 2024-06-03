@@ -167,10 +167,11 @@ class App {
 
 	private setLight() {
 		const light = new HemisphericLight('light', Vector3.Zero(), this.scene);
-		light.intensity = 1;
+		light.intensity = 0.5;
 	}
 
 	private async test() {
+		console.log('Tlqkf');
 		this.scene.clearColor = Color4.FromColor3(Color3.FromHexString('#f5f5dc'), 1);
 		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia4.glb', this.scene);
 		// const light = new PointLight('ttt', new Vector3(0, 0, 0), this.scene);
@@ -179,18 +180,24 @@ class App {
 
 		const light = new HemisphericLight('light', Vector3.Zero());
 		light.intensity = 1;
-
 		assets.meshes.forEach((mesh) => {
 			mesh.visibility = 0;
-			if (mesh.id == 'bear-card') {
+			if (mesh.id == '2.001') {
 				mesh.visibility = 1;
-				mesh.position.z -= 2;
 			}
-			if (mesh.id === 'Card') {
+
+			if (mesh.id == 'score-004.003') {
 				mesh.visibility = 1;
-				console.log(mesh.scaling);
-				mesh.position.z -= 2;
 			}
+			// if (mesh.id == 'bear-card') {
+			// 	mesh.visibility = 1;
+			// 	mesh.position.z -= 2;
+			// }
+			// if (mesh.id === 'Card') {
+			// 	mesh.visibility = 1;
+			// 	console.log(mesh.scaling);
+			// 	mesh.position.z -= 2;
+			// }
 			// mesh.setEnabled(false);
 		});
 
