@@ -1,6 +1,6 @@
-import { MapData, WildLife } from '../../interfaces';
+import { MapData, WildLife, IScoring } from '../../interfaces';
 
-export class FoxScoringA {
+export class FoxScoringA implements IScoring {
 	protected readonly FoxScoringValue: Record<number, number> = {
 		0: 0,
 		1: 1,

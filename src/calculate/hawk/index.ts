@@ -18,7 +18,17 @@
  *
  *
  */
-export { HawkScoringA } from './hawk-a';
-export { HawkScoringB } from './hawk-b';
-export { HawkScoringC } from './hawk-c';
-export { HawkScoringD } from './hawk-d';
+import { ScoringType } from '../../interfaces';
+import { HawkScoringA } from './hawk-a';
+import { HawkScoringB } from './hawk-b';
+import { HawkScoringC } from './hawk-c';
+import { HawkScoringD } from './hawk-d';
+
+export type HawkScoringType = typeof HawkScoringA | typeof HawkScoringB | typeof HawkScoringC | typeof HawkScoringD;
+
+export const Hawk: Record<ScoringType, HawkScoringType> = {
+	A: HawkScoringA,
+	B: HawkScoringB,
+	C: HawkScoringC,
+	D: HawkScoringD,
+};

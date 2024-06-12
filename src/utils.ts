@@ -1,5 +1,7 @@
-import { AbstractMesh } from '@babylonjs/core';
-import { QRS } from './interfaces';
+import { Vector3 } from '@babylonjs/core';
+
+const H = 1.5;
+const W = Math.cos(Math.PI / 6);
 
 export class Item<T> {
 	next: null | Item<T> = null;
@@ -61,4 +63,29 @@ export function numFromName(tags: string) {
 	const regex = /(\d)$/;
 	const match = tags.match(regex)!;
 	return +match[1];
+}
+
+export function tileVectorFromQRS(q: number, r: number) {
+	const column = q + (r - (r & 1)) / 2;
+	const row = r;
+	const offset = row % 2 == 0 ? 0 : W;
+	const x = offset + 2 * W * column;
+	const z = row * H;
+	return new Vector3(-x, 0, z);
+}
+
+export function tileIDFromQRS(q: number, r: number, s: number) {
+	return `tile[${q}][${r}][${s}]`;
+}
+
+export function getNeighborhoodFromTileID(tileID: string) {
+	const { q, r, s } = qrsFromTileID(tileID);
+	return [
+		[1, -1, 0], // NE
+		[1, 0, -1], // E
+		[0, 1, -1], // SE
+		[-1, 1, 0], // SW
+		[-1, 0, 1], // W
+		[0, -1, 1], // NW
+	].map((dir) => tileIDFromQRS(q + dir[0], r + dir[1], s + dir[2]));
 }

@@ -1,12 +1,5 @@
-import { MapData, GroupResult } from '../../interfaces';
+import { MapData } from '../../interfaces';
 import { SalmonScoring } from './salmon';
-const ElkScoringValueB: Record<number, number> = {
-	0: 0,
-	1: 2,
-	2: 5,
-	3: 9,
-	4: 13,
-};
 
 export class SalmonScoringB extends SalmonScoring {
 	protected readonly SalmonScoringValue: Record<number, number> = {

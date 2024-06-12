@@ -1,7 +1,6 @@
-import { MapData, QRS } from '../../interfaces';
-import { IHawkScoring } from './hawk';
+import { MapData, QRS, IScoring } from '../../interfaces';
 
-export class HawkScoringC implements IHawkScoring {
+export class HawkScoringC implements IScoring {
 	protected readonly HawkScoringValue = 3;
 	protected totalScore: number = 0;
 	protected confirmedTiles: string[][] = [];

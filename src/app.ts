@@ -1,6 +1,6 @@
 import '@babylonjs/core/Debug/debugLayer';
 import '@babylonjs/loaders/glTF';
-import { Inspector } from '@babylonjs/inspector';
+// import { Inspector } from '@babylonjs/inspector';
 import {
 	ActionManager,
 	ArcRotateCamera,
@@ -9,7 +9,7 @@ import {
 	Engine,
 	EngineFactory,
 	ExecuteCodeAction,
-	HemisphericLight,
+	PBRMaterial,
 	PointerEventTypes,
 	Scene,
 	SceneLoader,
@@ -18,14 +18,14 @@ import {
 	Vector3,
 	Viewport,
 } from '@babylonjs/core';
-import { Assets } from './assets';
-import { ScoringIcon } from './score/icon';
-import { GameManager } from './gameManager';
+import { GameManager } from './mediator';
+import { ScoringType, ScoringTypes } from './interfaces';
 
 class App {
 	private engine!: Engine;
 	private scene!: Scene;
 	private inputMap: Record<string, boolean> = {};
+	private scene2!: Scene;
 
 	constructor() {
 		this.init();
@@ -35,29 +35,129 @@ class App {
 		const canvas = document.querySelector('#gameCanvas') as HTMLCanvasElement;
 		this.engine = (await EngineFactory.CreateAsync(canvas, undefined)) as Engine;
 
-		await this.createScene();
+		// await this.createScene();
 		// const assets = new Assets(this.scene);
 		// await this.test();
 		// new Game(assets);
 		// const scoring = new Scoring(this.scene);
-		await SceneLoader.ImportMeshAsync('', './models/', 'cascadia5.glb', this.scene);
 
-		new GameManager(this.scene);
+		await this.createReadyScene();
 
-		await this.scene.whenReadyAsync();
-		this.engine.hideLoadingUI();
-		// const mediator = new GameManager(this.scene);
-		// Inspector.Show(this.scene, {});
-		this.engine.runRenderLoop(() => {
-			if (this.scene) this.scene.render();
-		});
+		// new GameManager(this.scene);
+
 		window.addEventListener('resize', () => {
 			this.engine.resize();
 		});
 	}
 
-	private async createScene() {
+	private async createReadyScene() {
 		this.engine.displayLoadingUI();
+		this.scene2 = new Scene(this.engine);
+		this.scene2.clearColor = Color4.FromColor3(Color3.FromHexString('#e8dcca'), 1);
+		await SceneLoader.ImportMeshAsync('', './models/', 'cascadia-ready.glb', this.scene2);
+		this.scene2.materials.forEach((v) => {
+			(v as PBRMaterial).unlit = true;
+		});
+
+		this.scene2.meshes.forEach((v) => {
+			v.setEnabled(false);
+			v.isPickable = false;
+		});
+
+		new ArcRotateCamera(
+			'board-cam',
+			Tools.ToRadians(90),
+			Tools.ToRadians(0),
+			16,
+			Vector3.Zero(),
+			this.scene2
+		);
+
+		const levels = [
+			['A', 'A', 'A', 'A', 'A', 80, [11, -4]],
+			['B', 'B', 'B', 'B', 'B', 80, [6, -4]],
+			['C', 'C', 'C', 'C', 'C', 80, [1, -4]],
+			['D', 'D', 'D', 'D', 'D', 80, [-4, -4]],
+			// ['D', 'D', 'D', 'D', 'D', 80, [-9, -4]],
+		];
+
+		const anchor = new TransformNode(`level-anchor`, this.scene2);
+
+		const bear = this.scene2.getMeshById('bear')!.clone('bear-clone', anchor)!;
+		bear.setEnabled(true);
+		bear.position.x += 2.4;
+		const elk = this.scene2.getMeshById('elk')!.clone('elk-clone', anchor)!;
+		elk.setEnabled(true);
+		elk.position.x += 1.2;
+		const fox = this.scene2.getMeshById('fox')!.clone('fox-clone', anchor)!;
+		fox.setEnabled(true);
+
+		const hawk = this.scene2.getMeshById('hawk')!.clone('hawk-clone', anchor)!;
+		hawk.setEnabled(true);
+		hawk.position.x -= 1.2;
+		const salmon = this.scene2.getMeshById('salmon')!.clone('salmon-clone', anchor)!;
+		salmon.setEnabled(true);
+		salmon.position.x -= 2.4;
+		anchor.setEnabled(false);
+
+		levels.forEach((level, i) => {
+			const levelNum = i + 1;
+			const anchorClone = anchor.clone(`level-${levelNum}`, anchor.parent, false)!;
+			anchorClone.setEnabled(true);
+			const card = this.scene2.getMeshById('card')!.clone('card-clone', anchorClone)!;
+			card.setEnabled(true);
+			card.isPickable = true;
+			const actionManager = new ActionManager(this.scene2);
+			const action = new ExecuteCodeAction(ActionManager.OnPickDownTrigger, () => {
+				const scoreTypes = {
+					Bear: level[0] as ScoringType,
+					Elk: level[1] as ScoringType,
+					Fox: level[2] as ScoringType,
+					Hawk: level[3] as ScoringType,
+					Salmon: level[4] as ScoringType,
+				};
+				window.alert('board camera move: q w e r');
+				this.createScene(scoreTypes);
+			});
+			actionManager.registerAction(action);
+			card.actionManager = actionManager;
+
+			const num = this.scene2.getMeshById(levelNum.toString())!.clone('num-clone', anchorClone)!;
+			num.scaling.x *= -1;
+			num.position.x += 2.5;
+			num.position.z -= 1.2;
+			num.setEnabled(true);
+			(level.slice(0, 5) as string[]).forEach((v, i) => {
+				const alpha = this.scene2.getMeshById(v)!.clone('alpha-clone', anchorClone)!;
+				alpha.scaling.x *= -1;
+
+				alpha.position.x += (2 - i) * 1.2;
+				alpha.setEnabled(true);
+			});
+
+			const win = this.scene2.getMeshById('score-' + level[5])!.clone('win-clone', anchorClone)!;
+			win.scaling.x *= -1;
+			win.position.x += 1.3;
+			win.position.z -= 1.2;
+			win.setEnabled(true);
+
+			const [x, z] = level[6]! as number[];
+			anchorClone.position.x += x;
+			anchorClone.position.z += z;
+			anchorClone.scalingDeterminant = 0.7;
+		});
+
+		await this.scene2.whenReadyAsync();
+		this.engine.hideLoadingUI();
+		// Inspector.Show(this.scene, {});
+		this.engine.runRenderLoop(() => {
+			if (this.scene2) this.scene2.render();
+		});
+	}
+
+	private async createScene(scoreType: ScoringTypes) {
+		this.engine.displayLoadingUI();
+		this.scene2.dispose();
 		this.scene = new Scene(this.engine);
 		this.scene.clearColor = Color4.FromColor3(Color3.FromHexString('#e8dcca'), 1);
 		// await SceneLoader.ImportMeshAsync('', './model/', 'cascadia4.glb', this.scene);
@@ -74,6 +174,9 @@ class App {
 
 		this.scene.activeCameras?.push(boardCam, pocketCam, scoringCam);
 
+		await SceneLoader.ImportMeshAsync('', './models/', 'cascadia5.glb', this.scene);
+
+		new GameManager(this.scene, scoreType);
 		// 화면에서 마우스 이동할 때 viewport에 따라 cameraToUseForPointers 변경하기위한 event listener
 		this.scene.onPointerObservable.add((evt) => {
 			if (evt.type == PointerEventTypes.POINTERMOVE) {
@@ -87,6 +190,13 @@ class App {
 			}
 
 			// modalNode.rotationQuaternion = boardCam.rotationQuaternion.clone();
+		});
+
+		await this.scene.whenReadyAsync();
+		this.engine.hideLoadingUI();
+		// Inspector.Show(this.scene, {});
+		this.engine.runRenderLoop(() => {
+			if (this.scene) this.scene.render();
 		});
 	}
 
@@ -174,36 +284,8 @@ class App {
 	}
 
 	private setLight() {
-		const light = new HemisphericLight('light', Vector3.Zero(), this.scene);
-		light.intensity = 2.5;
-	}
-
-	private async test() {
-		this.scene.clearColor = Color4.FromColor3(Color3.FromHexString('#f5f5dc'), 1);
-		const assets = await SceneLoader.ImportMeshAsync('', './models/', 'cascadia5.glb', this.scene);
-		// const light = new PointLight('ttt', new Vector3(0, 0, 0), this.scene);
-		// const light2 = new PointLight('ttt', new Vector3(-100, 101, -100));
-		// light2.intensity = 0.5;
-
-		const light = new HemisphericLight('light', Vector3.Zero());
-		light.intensity = 1;
-
-		assets.meshes.forEach((mesh) => {
-			mesh.visibility = 0;
-			if (mesh.id == 'bo') {
-				mesh.visibility = 1;
-				mesh.position.z -= 2;
-			}
-			if (mesh.id === 'Card') {
-				mesh.visibility = 1;
-				console.log(mesh.scaling);
-				mesh.position.z -= 2;
-			}
-			// mesh.setEnabled(false);
-		});
-
-		// bear?.setEnabled(false);
-		// console.log(bear?.material.unlit);
+		// const light = new HemisphericLight('light', Vector3.Zero(), this.scene);
+		// light.intensity = 1;
 	}
 }
 

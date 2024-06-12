@@ -91,11 +91,11 @@ export class TileScoring {
 
 		for (const habitatName in this.habitatsMaches) {
 			const habaitat = this.habitatsMaches[habitatName as Habitat];
-			if (habaitat.placedTiles.size == 0) continue;
-			else if (habaitat.placedTiles.size == 1) {
-				habaitat.largestSet = [...habaitat.placedTiles];
+			if (habaitat.tilesWithMatchedHabitats.size == 0) {
+				habaitat.largestSet = [null];
 				continue;
 			}
+
 			const matchedHabitats = habaitat.tilesWithMatchedHabitats;
 
 			for (const [tileNum] of matchedHabitats) {
@@ -117,6 +117,7 @@ export class TileScoring {
 					}
 					matchedHabitats.delete(tileNum);
 				}
+
 				if (habaitat.largestSet.length < visitedHabitats.size) {
 					habaitat.largestSet = [...visitedHabitats].map((v) => this.tileNumtoID[v]);
 				}

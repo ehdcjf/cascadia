@@ -1,4 +1,4 @@
-import { GroupResult, MapData } from '../../interfaces';
+import { MapData } from '../../interfaces';
 import { SalmonScoring } from './salmon';
 
 export class SalmonScoringC extends SalmonScoring {

@@ -1,4 +1,4 @@
-import { PocketTileInfo, PocketTokenInfo, TileInfo, WildLife } from './interfaces';
+import { PocketTileInfo, PocketTokenInfo, WildLife } from './interfaces';
 
 export enum GameState {
 	READY, // 턴 종료되고, 정리할때.
@@ -7,6 +7,7 @@ export enum GameState {
 	NATURE_PICK_ANY,
 	NATURE_CLEAR_TOKEN,
 	SCORING_CARD,
+	CALCULATE,
 }
 
 export class GameInfo {
@@ -37,7 +38,7 @@ export class GameInfo {
 	public canDrawToken: boolean = false;
 
 	public natureToken = 0;
-	public turnlefts = 8;
+	public turnlefts = 20;
 
 	get state() {
 		return this._state;

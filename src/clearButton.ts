@@ -1,59 +1,55 @@
-import {
-	AbstractMesh,
-	ActionManager,
-	ExecuteCodeAction,
-	PredicateCondition,
-	Scene,
-	Tools,
-	TransformNode,
-	Vector3,
-} from '@babylonjs/core';
-import { GameManager } from './mediator';
-import { Mediator } from './interfaces';
-import { Select } from '../legacy/select';
+import { AbstractMesh, ActionManager, ExecuteCodeAction, PredicateCondition, TransformNode } from '@babylonjs/core';
 import { GameInfo, GameState } from './gameInfo';
+import { Assets } from './assets';
 
 export class ClearButton {
-	private _select: Select;
+	private clear: AbstractMesh;
 	private anchor: TransformNode;
 	private resolve: any;
-	constructor(private scene: Scene, private readonly gameInfo: GameInfo) {
-		this.anchor = new TransformNode('modal-anchor', this.scene);
-		const cam = this.scene.getCameraByName('board-cam')!;
-		this.anchor.parent = cam;
+	constructor(assets: Assets, private readonly gameInfo: GameInfo) {
+		this.anchor = assets.transformNode;
+		this.anchor.name = 'clear-button-anchor';
+		this.anchor.parent = assets.modalAnchor;
 
-		this._select = new Select([this.scene.getMeshById('clear')!.clone('clear', this.anchor)!]);
+		this.clear = assets.buttonMeshes['clear'].clone('clear', this.anchor)!;
+		this.clear.setEnabled(true);
 
-		const natureDownAction = new ExecuteCodeAction(
+		const clearActionManger = assets.actionManager;
+
+		const clearDownAction = new ExecuteCodeAction(
 			ActionManager.OnPickDownTrigger,
 			() => {
-				this._select.actionMangers[0].hoverCursor = 'default';
+				clearActionManger.hoverCursor = 'default';
 				this.close();
 				if (this.resolve) {
 					this.resolve();
 				}
 			},
 			new PredicateCondition(
-				this._select.actionMangers[0],
+				clearActionManger,
 				() =>
 					this.gameInfo.state == GameState.NATURE_CLEAR_TOKEN &&
 					this.gameInfo.natureClear.size > 0
 			)
 		);
-		const natureOverAction = new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, () => {
-			this._select.actionMangers[0].hoverCursor =
+		const clearOverAction = new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, () => {
+			clearActionManger.hoverCursor =
 				this.gameInfo.state == GameState.NATURE_CLEAR_TOKEN &&
 				this.gameInfo.natureClear.size > 0
 					? 'pointer'
 					: 'not-allowed';
 		});
-		const natureOutAction = new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, () => {
-			this._select.actionMangers[0].hoverCursor = 'default';
+
+		const clearOutAction = new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, () => {
+			clearActionManger.hoverCursor = 'default';
 		});
-		this._select.actionMangers[0].registerAction(natureDownAction);
-		this._select.actionMangers[0].registerAction(natureOverAction);
-		this._select.actionMangers[0].registerAction(natureOutAction);
-		this._select.actionMangers[0].hoverCursor = 'default';
+
+		clearActionManger.registerAction(clearDownAction);
+		clearActionManger.registerAction(clearOverAction);
+		clearActionManger.registerAction(clearOutAction);
+		clearActionManger.hoverCursor = 'default';
+		this.clear.actionManager = clearActionManger;
+
 		this.close();
 	}
 

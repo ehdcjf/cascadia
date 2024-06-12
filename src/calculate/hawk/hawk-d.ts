@@ -1,8 +1,7 @@
-import { MapData, QRS, WildLife } from '../../interfaces';
+import { MapData, QRS, WildLife, IScoring } from '../../interfaces';
 import { Queue } from '../../utils';
-import { IHawkScoring } from './hawk';
 
-export class HawkScoringD implements IHawkScoring {
+export class HawkScoringD implements IScoring {
 	protected readonly HawkScoringValue = {
 		0: 0,
 		1: 4,

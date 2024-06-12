@@ -233,10 +233,8 @@
 import {
 	AbstractMesh,
 	ActionManager,
-	BoundingInfo,
+	Camera,
 	Color3,
-	Color4,
-	Engine,
 	PBRMaterial,
 	Scene,
 	StandardMaterial,
@@ -244,8 +242,23 @@ import {
 	TransformNode,
 	Vector3,
 } from '@babylonjs/core';
-import { CardMeshes, CardMeshesKey, cardMeshes } from '../interfaces';
-import { Tile } from './tile';
+import {
+	ButtonMeshes,
+	ButtonMeshesKey,
+	CardMeshes,
+	CardMeshesKey,
+	ModalMeshes,
+	ModalType,
+	TileActionMeshes,
+	buttonMeshes,
+	cardMeshes,
+	modalInfos,
+	tileActionMeshes,
+	TileActionMeshKey,
+} from '../interfaces';
+import { PocketTileMesh } from './pocketTile';
+import { PocketTokenMesh } from './pocketToken';
+import { BoardTileMesh } from './boardTile';
 
 const meshes = ['tile', 'tile-edge', 'token'] as const;
 type MainMeshesKey = (typeof meshes)[number];
@@ -273,8 +286,8 @@ const tileMat = [
 	'mountain',
 	'swamp',
 ] as const;
-type TileMatKey = (typeof tileMat)[number];
-type TileMat = Record<TileMatKey, PBRMaterial>;
+export type TileMatKey = (typeof tileMat)[number];
+export type TileMat = Record<TileMatKey, PBRMaterial>;
 
 const tokenMat = [
 	'bear',
@@ -294,59 +307,19 @@ const tokenMat = [
 	'hawk-inactive',
 	'salmon-inactive',
 ] as const;
-type TokenMatKey = (typeof tokenMat)[number];
+export type TokenMatKey = (typeof tokenMat)[number];
 type TokenMat = Record<TokenMatKey, PBRMaterial>;
 
-const buttonMeshes = [
-	'action-cancel',
-	'action-ccw',
-	'action-cw',
-	'action-confirm',
-	'calculate',
-	'cancel',
-	'clear',
-	'confirm',
-	'instructions',
-	'nature',
-	'pick',
-	'replace',
-	'undo',
-] as const;
-type ButtonMeshesKey = (typeof buttonMeshes)[number];
-type ButtonMeshes = Record<ButtonMeshesKey, AbstractMesh>;
-
-// const cardMeshes = [
-// 	'Card',
-// 	'BearA',
-// 	'BearB',
-// 	'BearC',
-// 	'BearD',
-// 	'ElkA',
-// 	'ElkB',
-// 	'ElkC',
-// 	'ElkD',
-// 	'FoxA',
-// 	'FoxB',
-// 	'FoxC',
-// 	'FoxD',
-// 	'HawkA',
-// 	'HawkB',
-// 	'HawkC',
-// 	'HawkD',
-// 	'SalmonA',
-// 	'SalmonB',
-// 	'SalmonC',
-// 	'SalmonD',
-// ] as const;
-// type CardMeshesKey = (typeof cardMeshes)[number];
-// type CardMeshes = Record<CardMeshesKey, AbstractMesh>;
-
-const scoringIcon = ['bear-score', 'elk-score', 'fox-score', 'hawk-score', 'salmon-score'] as const;
+const scoringIcon = ['rules', 'bear-score', 'elk-score', 'fox-score', 'hawk-score', 'salmon-score'] as const;
 type ScoringIconMeshesKey = (typeof scoringIcon)[number];
 type ScoringIcon = Record<ScoringIconMeshesKey, AbstractMesh>;
 
-type NumberMeshes = Record<number, AbstractMesh>;
+const infoMeshes = ['turn', 'pinecone', 'colons'] as const;
+type InfoMeshesKey = (typeof infoMeshes)[number];
+type InfoMeshes = Record<InfoMeshesKey, AbstractMesh>;
 
+type NumberMeshes = Record<number, AbstractMesh>;
+type FinalScoreMeshes = Record<'tile' | 'token' | 'finalscore' | 'points' | 'totalIcon', AbstractMesh>;
 export class Assets {
 	private _meshes: MainMeshes = {} as MainMeshes;
 	private _buttonMeshes: ButtonMeshes = {} as ButtonMeshes;
@@ -355,54 +328,139 @@ export class Assets {
 	private _tileMat: TileMat = {} as TileMat;
 	private _numberMeshes: NumberMeshes = {};
 	private _scoringIcon: ScoringIcon = {} as ScoringIcon;
-	constructor(private scene: Scene) {
+	private _infoMeshs: InfoMeshes = {} as InfoMeshes;
+	private _modalMeshes: ModalMeshes = {} as ModalMeshes;
+	private _tileActionMeshes: TileActionMeshes = {} as TileActionMeshes;
+	private _modalAnchor: TransformNode;
+	private _fianlScoreMesh: FinalScoreMeshes = {} as FinalScoreMeshes;
+	private cams: Record<'board' | 'scoring' | 'pocket', Camera>;
+	constructor(public scene: Scene) {
 		// __root__ 제외 전부 setEnable false 로 설정해주고.
-
+		this.cams = {
+			board: this.scene.getCameraByName('board-cam')!,
+			pocket: this.scene.getCameraByName('pocket-cam')!,
+			scoring: this.scene.getCameraByName('scoring-cam')!,
+		};
 		const scoringCardAnchor = new TransformNode('scoring-card-anchor', this.scene);
 		scoringCardAnchor.parent = this.boardCam;
 		scoringCardAnchor.position = new Vector3(0, 0, 10);
 		// scoringCardAnchor.rotate(new Vector3(1, 0, 0), Tools.ToRadians(270));
 
+		this._modalAnchor = new TransformNode('modal-anchor', this.scene);
+		this._modalAnchor.parent = this.boardCam;
+		this._modalAnchor.position = new Vector3(0, 0, 10);
+
+		const tileActionAnchor = new TransformNode('tile-action-anchor', this.scene);
+		tileActionAnchor.parent = this.modalAnchor;
+
+		Object.keys(modalInfos).forEach((v) => {
+			const subModalAnchor = this.transformNode;
+			subModalAnchor.name = v;
+			subModalAnchor.id = v;
+			subModalAnchor.parent = this.modalAnchor;
+
+			const buttonAnchor = this.transformNode;
+			buttonAnchor.name = 'button-anchor';
+			buttonAnchor.parent = subModalAnchor;
+			this._modalMeshes[v as ModalType] = subModalAnchor;
+		});
+
 		for (const mesh of this.scene.meshes) {
 			mesh.setEnabled(false);
+
 			if (mesh.id == '__root__') mesh.setEnabled(true);
 			// tile, edge, token
-			else if (meshes.includes(mesh.id as MainMeshesKey)) {
+			else if (['tokenw', 'tileh', 'final-score', 'points', 'total-score'].includes(mesh.id)) {
+				if (mesh.id == 'tokenw') {
+					this._fianlScoreMesh.token = mesh;
+				} else if (mesh.id == 'tileh') {
+					this._fianlScoreMesh.tile = mesh;
+				} else if (mesh.id == 'final-score') {
+					this._fianlScoreMesh.finalscore = mesh;
+				} else if (mesh.id == 'points') {
+					this._fianlScoreMesh.points = mesh;
+				} else if (mesh.id == 'total-score') {
+					this._fianlScoreMesh.totalIcon = mesh;
+				}
+			} else if (meshes.includes(mesh.id as MainMeshesKey)) {
 				this._meshes[mesh.id as MainMeshesKey] = mesh;
 			}
 			// number mesh;
-			else if (Number.isInteger(mesh.id) && Number(mesh.id) >= 0 && Number(mesh.id) <= 20) {
+			else if (
+				!mesh.id.includes('+') &&
+				Number.isInteger(+mesh.id) &&
+				Number(mesh.id) >= 0 &&
+				Number(mesh.id) <= 20
+			) {
+				mesh.renderingGroupId = 1;
+
 				this._numberMeshes[Number(mesh.id)] = mesh;
 			}
 			// button mesh;
 			else if (buttonMeshes.includes(mesh.id as ButtonMeshesKey)) {
+				mesh.renderingGroupId = 1;
+				mesh.scaling.y *= -1;
+				mesh.position = new Vector3(0, -3.5, 0);
+				mesh.rotation = new Vector3(Tools.ToRadians(90), 0, 0);
+				mesh.scalingDeterminant = 0.2;
+				mesh.isBlocker = true;
+				mesh.setEnabled(false);
 				this._buttonMeshes[mesh.id as ButtonMeshesKey] = mesh;
 			}
 			// card mesh;
 			else if (cardMeshes.includes(mesh.id as CardMeshesKey)) {
-				// mesh.scalingDeterminant = 0.5;
-				// mesh.renderingGroupId = 1;
-				// mesh.name = 'card';
 				mesh.scaling.y *= -1;
-				// mesh.rotate(new Vector3(1, 0, 0), Tools.ToRadians(75));
-				// mesh.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
-				// mesh.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
-				// mesh.rotate(new Vector3(0, 0, 1), Tools.ToRadians(-90));
-				// mesh.material!.alphaMode = Engine.ALPHA_ADD;
 				mesh.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
 				mesh.name = 'card';
 				mesh.parent = scoringCardAnchor;
-				// mesh.rotate(new Vector3(0, 0, 1), Tools.ToRadians(180));
-
 				this._cardMesh[mesh.id as CardMeshesKey] = mesh;
 			}
 			// scoring icon;
 			else if (scoringIcon.includes(mesh.id as ScoringIconMeshesKey)) {
+				mesh.renderingGroupId = 1;
 				this._scoringIcon[mesh.id as ScoringIconMeshesKey] = mesh;
+			}
+			// info
+			else if (infoMeshes.includes(mesh.id as InfoMeshesKey)) {
+				mesh.renderingGroupId = 1;
+				this._infoMeshs[mesh.id as InfoMeshesKey] = mesh;
+			}
+			// tile action
+			else if (tileActionMeshes.includes(mesh.id as TileActionMeshKey)) {
+				mesh.renderingGroupId = 1;
+				mesh.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
+				mesh.parent = tileActionAnchor;
+				this._tileActionMeshes[mesh.id as TileActionMeshKey] = mesh;
+			}
+
+			const modalInfo = Object.entries(modalInfos).filter((v) => mesh.id.startsWith(v[1].main))[0];
+			if (modalInfo) {
+				mesh.renderingGroupId = 1;
+				mesh.scalingDeterminant = 0.3;
+				mesh.rotate(new Vector3(1, 0, 0), Tools.ToRadians(90));
+				mesh.setEnabled(true);
+
+				const type = modalInfo[0];
+				const subModalAnchor = this._modalMeshes[type as ModalType];
+
+				if (mesh.id == modalInfo[1].main) {
+					mesh.name = 'main';
+					mesh.parent = subModalAnchor;
+				} else {
+					const wildlifes = ['bear', 'elk', 'fox', 'salmon', 'hawk'];
+					mesh.name = wildlifes.filter((v) => mesh.id.includes(v))[0];
+					mesh.parent = subModalAnchor;
+				}
 			}
 		}
 
+		for (const key in this._modalMeshes) {
+			const tf = this._modalMeshes[key as ModalType];
+			tf.setEnabled(false);
+		}
+
 		for (const material of this.scene.materials) {
+			(material as PBRMaterial).unlit = true;
 			if (tileMat.includes(material.id as TileMatKey)) {
 				this._tileMat[material.id as TileMatKey] = material as PBRMaterial;
 			} else if (tokenMat.includes(material.id as TokenMatKey)) {
@@ -411,12 +469,11 @@ export class Assets {
 		}
 
 		const yellowMat = new StandardMaterial('yellow');
+		yellowMat.diffuseColor = Color3.Yellow();
 		yellowMat.emissiveColor = Color3.Yellow();
 
 		this._meshes['tile-edge'].material = yellowMat;
 		this._meshes['tile-edge'].visibility = 0;
-
-		const x = new Tile(this.tile, this.token, this.tileEdge, this._tileMat, this._tokenMat);
 	}
 	// 자주쓰이는 메시 가져오기
 	get actionManager() {
@@ -427,14 +484,23 @@ export class Assets {
 		return this._cardMesh;
 	}
 
+	get pocketTile() {
+		return new PocketTileMesh(this);
+	}
+
+	get pocketToken() {
+		return new PocketTokenMesh(this);
+	}
+
+	get boardTile() {
+		return new BoardTileMesh(this);
+	}
+
+	get tileAction() {
+		return this._tileActionMeshes;
+	}
+
 	get tile() {
-		const tile = this._meshes['tile'].clone('tile',null);
-		const anchor = this.transformNode;
-		anchor.parent = tile;
-		const edge =
-
-
-
 		return this._meshes.tile;
 	}
 
@@ -454,8 +520,32 @@ export class Assets {
 		return this._meshes.token;
 	}
 
+	get numbers() {
+		return this._numberMeshes;
+	}
+
+	get infoMeshes() {
+		return this._infoMeshs;
+	}
+
+	get buttonMeshes() {
+		return this._buttonMeshes;
+	}
+
+	get modalMeshes() {
+		return this._modalMeshes;
+	}
+
 	get transformNode() {
 		return new TransformNode('tf', this.scene);
+	}
+
+	get tileMat() {
+		return this._tileMat;
+	}
+
+	get tokenMat() {
+		return this._tokenMat;
 	}
 
 	get background() {
@@ -463,10 +553,22 @@ export class Assets {
 	}
 
 	get boardCam() {
-		return this.scene.getCameraByName('board-cam');
+		return this.cams.board;
 	}
 
 	get scoringCam() {
-		return this.scene.getCameraByName('scoring-cam');
+		return this.cams.scoring;
+	}
+
+	get pocketCam() {
+		return this.cams.pocket;
+	}
+
+	get modalAnchor() {
+		return this._modalAnchor;
+	}
+
+	get finalScoreMesh() {
+		return this._fianlScoreMesh;
 	}
 }

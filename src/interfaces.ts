@@ -1,5 +1,4 @@
 import { AbstractMesh, Observable, TransformNode } from '@babylonjs/core';
-import { Assets } from './assets';
 
 export type WildLife = 'bear' | 'elk' | 'hawk' | 'salmon' | 'fox';
 export type Habitat = 'desert' | 'forest' | 'lake' | 'mountain' | 'swamp';
@@ -75,23 +74,6 @@ export type ActionKey = 'cancel' | 'confirm' | 'rotate-cw' | 'rotate-ccw';
 
 // }
 
-export abstract class BaseModal {
-	protected anchor!: TransformNode;
-
-	constructor(parent: TransformNode) {
-		this.anchor = Assets.getTransformNode('modal-anchor');
-		this.anchor.parent = parent;
-	}
-
-	open() {
-		this.anchor.setEnabled(true);
-	}
-
-	close() {
-		this.anchor.setEnabled(false);
-	}
-}
-
 type TURN_START_EVENT = {
 	type: 'TURN_START';
 };
@@ -141,19 +123,19 @@ type PUT_TOKEN_EVENT = {
 };
 
 type CONFIRM_TILE_EVENT = {
-	type: 'CONFIRM_TILE';
+	type: 'TILE_CONFIRM';
 };
 
 type CANCEL_TILE_EVENT = {
-	type: 'CANCEL_TILE';
+	type: 'TILE_CANCEL';
 };
 
 type ROTATE_TILE_CCW_EVENT = {
-	type: 'ROTATE_TILE_CCW';
+	type: 'TILE_CCW';
 };
 
 type ROTATE_TILE_CW_EVENT = {
-	type: 'ROTATE_TILE_CW';
+	type: 'TILE_CW';
 };
 
 type NO_PLACEMENT_EVENT = {
@@ -211,6 +193,10 @@ type TILE_ACTION_EVENT = {
 	data: string;
 };
 
+type TILE_SCORE_EVENT = {
+	type: 'TOTAL_SCORE';
+};
+
 export const MODAL_TAG = {
 	DUPLICATE_THREE: 'DUPLICATE_THREE',
 	DUPLICATE_ALL: 'DUPLICATE_ALL',
@@ -241,7 +227,37 @@ type SHOW_SCORING_CARD_EVENT = {
 	data: ScoringWildlife;
 };
 
-export type MediatorEvent = SHOW_SCORING_CARD_EVENT | START_EVENT;
+export type MediatorEvent =
+	| SHOW_SCORING_CARD_EVENT
+	| START_EVENT
+	| TURN_START_EVENT
+	| TURN_END_EVENT
+	| INIT_EVENT
+	| READY_EVENT
+	| START_EVENT
+	| END_EVENT
+	| PICK_TILE_EVENT
+	| PICK_TOKEN_EVENT
+	| PUT_TILE_EVENT
+	| PUT_TOKEN_EVENT
+	| CONFIRM_TILE_EVENT
+	| CANCEL_TILE_EVENT
+	| ROTATE_TILE_CCW_EVENT
+	| ROTATE_TILE_CW_EVENT
+	| NO_PLACEMENT_EVENT
+	| THROW_TOKEN_EVENT
+	| DUPLICATE_THREE_EVENT
+	| CAN_REFILL_EVENT
+	| REPLACE_EVENT
+	| DUPLICATE_ALL_EVENT
+	| UNDO_EVENT
+	| CALCULATE_EVENT
+	| USE_NATURE_EVENT
+	| REFILL_EVENT
+	| MODAL_OPEN_EVENT
+	| MODAL_CLOSE_EVENT
+	| TILE_SCORE_EVENT
+	| TILE_ACTION_EVENT;
 
 export type Mediator = Observable<MediatorEvent>;
 
@@ -270,3 +286,77 @@ export const cardMeshes = [
 ] as const;
 export type CardMeshesKey = (typeof cardMeshes)[number];
 export type CardMeshes = Record<CardMeshesKey, AbstractMesh>;
+
+export type ScoringType = 'A' | 'B' | 'C' | 'D';
+export type ScoringTypes = Record<ScoringWildlife, ScoringType>;
+export const modalInfos = {
+	NATURE_NO_VALID_PLACEMENT: {
+		main: 'nature-no-valid-placement',
+		buttons: ['cancel', 'confirm'],
+		wildlife: true,
+	},
+	ALL_DULPLICATE_TOKEN: {
+		main: 'duplicate4',
+		buttons: ['close'],
+	},
+	THREE_DULPLICATE_TOKEN: {
+		main: 'duplicate3',
+		buttons: ['close', 'replace'],
+		wildlife: true,
+	},
+	USE_NATURE_TOKEN: {
+		main: 'use-nature-token',
+		buttons: ['close', 'pick', 'clear'],
+	},
+	NATURE_PICK_ANY_TOKEN: {
+		main: 'nature-turn-token',
+		buttons: ['close'],
+	},
+	NATURE_PICK_ANY_TILE: {
+		main: 'nature-turn-tile',
+		buttons: ['close'],
+	},
+	NO_VALID_PLACEMENT: {
+		main: 'no-valid-placement',
+		buttons: ['cancel', 'confirm'],
+	},
+	NATURE_CLEAR_TOKEN: {
+		main: 'nature-clear',
+		buttons: ['close'],
+	},
+	LAST_TURN: {
+		main: 'last-turn',
+		buttons: ['calculate'],
+	},
+};
+
+export type ModalType = keyof typeof modalInfos;
+export type ModalMeshes = Record<ModalType, TransformNode>;
+
+export const buttonMeshes = [
+	// 'action-cancel',
+	// 'action-ccw',
+	// 'action-cw',
+	// 'action-confirm',
+	'calculate',
+	'cancel',
+	'close',
+	'clear',
+	'confirm',
+	'instructions',
+	'nature',
+	'pick',
+	'replace',
+	'undo',
+] as const;
+export type ButtonMeshesKey = (typeof buttonMeshes)[number];
+export type ButtonMeshes = Record<ButtonMeshesKey, AbstractMesh>;
+
+export const tileActionMeshes = ['action-cancel', 'action-ccw', 'action-cw', 'action-confirm'] as const;
+export type TileActionMeshKey = (typeof tileActionMeshes)[number];
+export type TileActionMeshes = Record<TileActionMeshKey, AbstractMesh>;
+
+export interface IScoring {
+	score: number;
+	tiles: string[][];
+}

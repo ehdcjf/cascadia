@@ -1,7 +1,7 @@
-import { MapData } from '../../interfaces';
+import { IScoring, MapData } from '../../interfaces';
 import { Queue } from '../../utils';
 
-export abstract class BearScoring {
+export abstract class BearScoring implements IScoring {
 	protected totalScore: number = 0;
 	protected confirmedTiles: string[][] = [];
 	protected bearGroups: string[][] = [];

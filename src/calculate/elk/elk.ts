@@ -1,7 +1,7 @@
-import { MapData, QRS } from '../../interfaces';
+import { IScoring, MapData } from '../../interfaces';
 import { Queue, qrsFromTileID } from '../../utils';
 
-export abstract class ElkScoring {
+export abstract class ElkScoring implements IScoring {
 	protected totalScore: number = 0;
 	protected confirmedTiles: string[][] = [];
 	protected elkGroups: string[][];

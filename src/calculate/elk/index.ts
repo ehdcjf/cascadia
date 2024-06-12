@@ -8,7 +8,14 @@
  * (D) Groups must be in a circular formation, as pictured.
  */
 
-export { ElkScoringA } from './elk-a';
-export { ElkScoringB } from './elk-b';
-export { ElkScoringC } from './elk-c';
-export { ElkScoringD } from './elk-d';
+import { ElkScoringA } from './elk-a';
+import { ElkScoringB } from './elk-b';
+import { ElkScoringC } from './elk-c';
+import { ElkScoringD } from './elk-d';
+
+export const Elk = {
+	A: ElkScoringA,
+	B: ElkScoringB,
+	C: ElkScoringC,
+	D: ElkScoringD,
+};

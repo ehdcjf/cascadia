@@ -9,7 +9,14 @@
  * (D) Score for each fox pair, an increasing number of points based on the number of unique animal pairs (not including other fox pairs) directly adjacent to it. As pictured, pairs of other animals do not need to be adjacent to each other.
  */
 
-export { FoxScoringA } from './fox-a';
-export { FoxScoringB } from './fox-b';
-export { FoxScoringC } from './fox-c';
-export { FoxScoringD } from './fox-d';
+import { FoxScoringA } from './fox-a';
+import { FoxScoringB } from './fox-b';
+import { FoxScoringC } from './fox-c';
+import { FoxScoringD } from './fox-d';
+
+export const Fox = {
+	A: FoxScoringA,
+	B: FoxScoringB,
+	C: FoxScoringC,
+	D: FoxScoringD,
+};

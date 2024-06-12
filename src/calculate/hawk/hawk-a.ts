@@ -1,7 +1,6 @@
-import { MapData } from '../../interfaces';
-import { IHawkScoring } from './hawk';
+import { IScoring, MapData } from '../../interfaces';
 
-export class HawkScoringA implements IHawkScoring {
+export class HawkScoringA implements IScoring {
 	protected readonly HawkScoringValue: Record<number, number> = {
 		0: 0,
 		1: 2,

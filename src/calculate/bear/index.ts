@@ -12,7 +12,17 @@
  * D: Score for each group of bears 2-4 in size
  */
 
-export { BearScoringA } from './bear-a';
-export { BearScoringB } from './bear-b';
-export { BearScoringC } from './bear-c';
-export { BearScoringD } from './bear-d';
+import { ScoringType } from '../../interfaces';
+import { BearScoringA } from './bear-a';
+import { BearScoringB } from './bear-b';
+import { BearScoringC } from './bear-c';
+import { BearScoringD } from './bear-d';
+
+export type BearScoringType = typeof BearScoringA | typeof BearScoringB | typeof BearScoringC | typeof BearScoringD;
+
+export const Bear: Record<ScoringType, BearScoringType> = {
+	A: BearScoringA,
+	B: BearScoringB,
+	C: BearScoringC,
+	D: BearScoringD,
+};

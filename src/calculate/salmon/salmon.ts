@@ -1,7 +1,7 @@
-import { GroupResult, MapData, QRS } from '../../interfaces';
-import { Queue, qrsFromTileID } from '../../utils';
+import { MapData, IScoring } from '../../interfaces';
+import { Queue } from '../../utils';
 
-export abstract class SalmonScoring {
+export abstract class SalmonScoring implements IScoring {
 	protected totalScore: number = 0;
 	protected confirmedTiles: string[][] = [];
 	protected salmonGroups: string[][];
@@ -9,10 +9,7 @@ export abstract class SalmonScoring {
 	constructor(protected readonly mapData: MapData) {
 		const allValidSalmons = this.getValidSalmons();
 		this.salmonGroups = this.groupedSalmons(allValidSalmons);
-		this.calculate();
 	}
-
-	protected abstract calculate(): void;
 
 	private getValidSalmons(): string[] {
 		const validSalmons: Array<string> = [];

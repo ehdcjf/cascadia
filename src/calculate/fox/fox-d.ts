@@ -1,7 +1,7 @@
-import { GroupResult, MapData, WildLife } from '../../interfaces';
+import { GroupResult, MapData, IScoring } from '../../interfaces';
 import { Queue, qrsFromTileID } from '../../utils';
 
-export class FoxScoringD {
+export class FoxScoringD implements IScoring {
 	protected readonly FoxScoringValue: Record<number, number> = {
 		0: 0,
 		1: 5,
