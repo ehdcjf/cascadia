@@ -18,3 +18,12 @@ babylonjs, typescript, blender
  npm run dev
 ```
 
+
+## 참고자료
+
+- [육각형 타일을 사용하는 보드게임 구현 관련 자료 ](https://www.redblobgames.com/grids/hexagons/).
+
+- [캐스캐디아 룰북](https://www.alderac.com/wp-content/uploads/2021/08/Cascadia-Rules.pdf)
+
+  
+
